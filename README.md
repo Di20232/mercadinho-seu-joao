@@ -40,6 +40,10 @@ Acesse `http://localhost:3000`.
 
 `npm run seed:products` ([prisma/seedProducts.js](prisma/seedProducts.js)) insere um catálogo de exemplo de mercadinho (arroz, feijão, laticínios, limpeza, higiene etc.), com datas de validade variadas — alguns vencendo em poucos dias, outros com validade longa, e alguns sem validade (produtos de limpeza/higiene, como definido para o sistema). Alguns produtos já entram com estoque abaixo do mínimo, então o Painel mostra alertas reais assim que você loga.
 
+### Simulação de histórico de vendas
+
+`npm run simulate:sales` ([prisma/simulateSales.js](prisma/simulateSales.js)) gera um histórico de vendas realista, espalhado nos últimos 14 dias (`SIMULATE_DAYS` para mudar a janela) — ao contrário de uma venda feita pela tela ou pela API (que sempre grava a data de agora), este script "volta no tempo", alternando entre o administrador e um caixa de demonstração. Isso é o que faz o **Relatório de vendas por dia** mostrar uma tendência de verdade em vez de um único dia, e a **previsão de esgotamento** calcular uma taxa de venda diária real em vez de zero. Requer produtos já cadastrados (`npm run seed:products` ou seus próprios produtos).
+
 É seguro rodar mais de uma vez: identifica cada produto pelo código de barras e atualiza em vez de duplicar. Edite a lista no arquivo para refletir os produtos, preços e código de barras reais do cliente antes de usar em produção — os dados atuais são só um ponto de partida.
 
 ## Publicando na nuvem (exemplo: Render, Railway ou similar)
