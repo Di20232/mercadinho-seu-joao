@@ -42,6 +42,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
     return;
   }
   document.getElementById('user-name').textContent = `${currentUser.name} (${currentUser.role === 'ADMIN' ? 'admin' : 'caixa'})`;
+  document.getElementById('user-avatar').textContent = currentUser.name.trim().charAt(0).toUpperCase();
   document.body.classList.toggle('role-admin', currentUser.role === 'ADMIN');
   switchTab('dashboard');
 })();
