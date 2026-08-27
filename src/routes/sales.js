@@ -39,10 +39,19 @@ router.post('/', validate(saleSchema), async (req, res) => {
 
   const sale = await prisma.$transaction(async (tx) => {
     const created = await tx.sale.create({ data: { sellerId: req.user.sub, totalAmount: '0' } });
+
+    // Uma única consulta para todos os itens, em vez de um SELECT por item
+    // dentro do laço (N+1). Numa venda de 20 itens isso troca 20 idas ao
+    // banco por 1 só, encurtando a duração da transação — o que também
+    // reduz o tempo que a linha de cada produto fica travada pelo UPDATE
+    // atômico logo abaixo.
+    const products = await tx.product.findMany({ where: { id: { in: productIds } } });
+    const productById = new Map(products.map((p) => [p.id, p]));
+
     let total = 0;
 
     for (const item of items) {
-      const product = await tx.product.findUnique({ where: { id: item.productId } });
+      const product = productById.get(item.productId);
       if (!product || !product.active) throw httpError(404, 'Um dos produtos da venda não foi encontrado.');
 
       // UPDATE condicional atômico: só decrementa se houver saldo suficiente.

@@ -142,32 +142,43 @@ function addToCart(product) {
   renderCart();
 }
 
+function updateCartTotal() {
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  document.getElementById('cart-total').textContent = formatMoney(total);
+}
+
 function renderCart() {
   const body = document.getElementById('cart-body');
   if (!body) return;
   body.innerHTML = '';
-  let total = 0;
 
   cart.forEach((item, index) => {
-    const subtotal = item.price * item.quantity;
-    total += subtotal;
+    // A célula de subtotal é atualizada diretamente pelo "oninput" abaixo,
+    // em vez de chamar renderCart() de novo a cada tecla digitada — recriar
+    // a <tr>/<input> em todo keystroke troca o nó DOM do campo de
+    // quantidade, e o navegador perde o foco nele. Na prática, o segundo
+    // dígito de "12" nunca chegava a ser digitado: o campo perdia o foco
+    // assim que o "1" era digitado.
+    const subtotalCell = el('td', {}, formatMoney(item.price * item.quantity));
+    const qtyInput = el('input', {
+      type: 'number', min: '0.001', step: '0.001', value: String(item.quantity),
+      oninput: (e) => {
+        const v = parseFloat(e.target.value);
+        item.quantity = Number.isFinite(v) && v > 0 ? v : item.quantity;
+        subtotalCell.textContent = formatMoney(item.price * item.quantity);
+        updateCartTotal();
+      },
+    });
     body.appendChild(el('tr', {}, [
       el('td', {}, item.name),
-      el('td', {}, el('input', {
-        type: 'number', min: '0.001', step: '0.001', value: String(item.quantity),
-        oninput: (e) => {
-          const v = parseFloat(e.target.value);
-          item.quantity = Number.isFinite(v) && v > 0 ? v : item.quantity;
-          renderCart();
-        },
-      })),
+      el('td', {}, qtyInput),
       el('td', {}, formatMoney(item.price)),
-      el('td', {}, formatMoney(subtotal)),
+      subtotalCell,
       el('td', {}, el('button', { class: 'small secondary', type: 'button', onclick: () => { cart.splice(index, 1); renderCart(); } }, 'Remover')),
     ]));
   });
 
-  document.getElementById('cart-total').textContent = formatMoney(total);
+  updateCartTotal();
   document.getElementById('confirm-sale-btn').disabled = cart.length === 0;
 }
 

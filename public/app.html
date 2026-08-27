@@ -36,22 +36,22 @@
       <div class="grid-2">
         <div class="card">
           <h3>Estoque baixo</h3>
-          <table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Mínimo</th></tr></thead><tbody id="tb-low-stock"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Mínimo</th></tr></thead><tbody id="tb-low-stock"></tbody></table></div>
         </div>
         <div class="card">
           <h3>Previsão de esgotar em 7 dias</h3>
-          <table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Dias restantes</th></tr></thead><tbody id="tb-soon-out"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Dias restantes</th></tr></thead><tbody id="tb-soon-out"></tbody></table></div>
         </div>
       </div>
 
       <div class="grid-2">
         <div class="card">
           <h3>Vencendo em breve</h3>
-          <table class="table"><thead><tr><th>Produto</th><th>Validade</th><th>Estoque</th></tr></thead><tbody id="tb-expiring"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Validade</th><th>Estoque</th></tr></thead><tbody id="tb-expiring"></tbody></table></div>
         </div>
         <div class="card" id="card-slow-moving" hidden>
           <h3>Produtos parados (sem venda em 60 dias)</h3>
-          <table class="table"><thead><tr><th>Produto</th><th>Estoque</th></tr></thead><tbody id="tb-slow-moving"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Estoque</th></tr></thead><tbody id="tb-slow-moving"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -62,13 +62,13 @@
       <h2>Nova venda</h2>
       <div class="card">
         <div class="sale-picker">
-          <input id="sale-search" type="text" placeholder="Buscar produto por nome ou código de barras..." />
+          <input id="sale-search" type="text" placeholder="Buscar produto por nome ou código de barras..." aria-label="Buscar produto para adicionar à venda" />
           <div id="sale-results" class="search-results"></div>
         </div>
-        <table class="table">
+        <div class="table-wrap"><table class="table">
           <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Subtotal</th><th></th></tr></thead>
           <tbody id="cart-body"></tbody>
-        </table>
+        </table></div>
         <div class="cart-total">Total: <strong id="cart-total">R$ 0,00</strong></div>
         <button id="confirm-sale-btn" disabled>Confirmar venda</button>
         <p id="sale-msg" class="error" hidden></p>
@@ -76,10 +76,10 @@
 
       <h2>Vendas recentes</h2>
       <div class="card">
-        <table class="table">
+        <div class="table-wrap"><table class="table">
           <thead><tr><th>Data</th><th>Vendedor</th><th>Itens</th><th>Total</th><th></th></tr></thead>
           <tbody id="sales-list"></tbody>
-        </table>
+        </table></div>
       </div>
     </section>
   </template>
@@ -90,12 +90,12 @@
         <h2>Produtos</h2>
         <button id="new-product-btn" data-admin-only>+ Novo produto</button>
       </div>
-      <input id="product-search" type="text" placeholder="Buscar produtos..." class="full" />
+      <input id="product-search" type="text" placeholder="Buscar produtos..." class="full" aria-label="Buscar produtos" />
       <div class="card">
-        <table class="table">
+        <div class="table-wrap"><table class="table">
           <thead><tr><th>Nome</th><th>Categoria</th><th>Estoque</th><th>Mín.</th><th>Preço</th><th data-admin-only>Custo</th><th>Validade</th><th></th></tr></thead>
           <tbody id="products-list"></tbody>
-        </table>
+        </table></div>
       </div>
     </section>
   </template>
@@ -104,15 +104,15 @@
     <form id="product-form" class="card">
       <h3 id="product-form-title">Novo produto</h3>
       <input type="hidden" id="p-id" />
-      <label>Nome</label><input id="p-name" required maxlength="150" />
-      <label>Categoria</label><input id="p-category" maxlength="80" />
-      <label>Código de barras (opcional)</label><input id="p-barcode" maxlength="64" />
-      <label>Unidade</label><input id="p-unit" value="UN" maxlength="10" required />
-      <label>Preço de venda (R$)</label><input id="p-sale-price" type="number" step="0.01" min="0.01" required />
-      <label>Preço de custo (R$)</label><input id="p-cost-price" type="number" step="0.01" min="0" required />
-      <label>Estoque mínimo</label><input id="p-min-stock" type="number" step="0.001" min="0" value="0" />
-      <label id="p-initial-stock-label">Estoque inicial</label><input id="p-initial-stock" type="number" step="0.001" min="0" value="0" />
-      <label>Validade (opcional)</label><input id="p-expiry" type="date" />
+      <label for="p-name">Nome</label><input id="p-name" required maxlength="150" />
+      <label for="p-category">Categoria</label><input id="p-category" maxlength="80" />
+      <label for="p-barcode">Código de barras (opcional)</label><input id="p-barcode" maxlength="64" />
+      <label for="p-unit">Unidade</label><input id="p-unit" value="UN" maxlength="10" required />
+      <label for="p-sale-price">Preço de venda (R$)</label><input id="p-sale-price" type="number" step="0.01" min="0.01" required />
+      <label for="p-cost-price">Preço de custo (R$)</label><input id="p-cost-price" type="number" step="0.01" min="0" required />
+      <label for="p-min-stock">Estoque mínimo</label><input id="p-min-stock" type="number" step="0.001" min="0" value="0" />
+      <label id="p-initial-stock-label" for="p-initial-stock">Estoque inicial</label><input id="p-initial-stock" type="number" step="0.001" min="0" value="0" />
+      <label for="p-expiry">Validade (opcional)</label><input id="p-expiry" type="date" />
       <div class="form-actions">
         <button type="submit">Salvar</button>
         <button type="button" id="product-cancel-btn" class="secondary">Cancelar</button>
@@ -128,20 +128,20 @@
       <div class="grid-2">
         <form id="entry-form" class="card">
           <h3>Entrada de mercadoria (compra)</h3>
-          <label>Produto</label>
+          <label for="entry-product">Produto</label>
           <select id="entry-product" required></select>
-          <label>Quantidade</label><input id="entry-qty" type="number" step="0.001" min="0.001" required />
-          <label>Observação</label><input id="entry-reason" maxlength="255" />
+          <label for="entry-qty">Quantidade</label><input id="entry-qty" type="number" step="0.001" min="0.001" required />
+          <label for="entry-reason">Observação</label><input id="entry-reason" maxlength="255" />
           <button type="submit">Registrar entrada</button>
           <p id="entry-msg" class="error" hidden></p>
         </form>
 
         <form id="adjustment-form" class="card">
           <h3>Ajuste / perda (produto vencido, quebra etc.)</h3>
-          <label>Produto</label>
+          <label for="adjustment-product">Produto</label>
           <select id="adjustment-product" required></select>
-          <label>Quantidade a remover</label><input id="adjustment-qty" type="number" step="0.001" min="0.001" required />
-          <label>Motivo</label><input id="adjustment-reason" maxlength="255" required placeholder="Ex: produto vencido" />
+          <label for="adjustment-qty">Quantidade a remover</label><input id="adjustment-qty" type="number" step="0.001" min="0.001" required />
+          <label for="adjustment-reason">Motivo</label><input id="adjustment-reason" maxlength="255" required placeholder="Ex: produto vencido" />
           <button type="submit">Registrar perda/ajuste</button>
           <p id="adjustment-msg" class="error" hidden></p>
         </form>
@@ -149,10 +149,10 @@
 
       <h3>Histórico de movimentações</h3>
       <div class="card">
-        <table class="table">
+        <div class="table-wrap"><table class="table">
           <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Estoque resultante</th><th>Motivo</th><th>Usuário</th></tr></thead>
           <tbody id="movements-list"></tbody>
-        </table>
+        </table></div>
       </div>
     </section>
   </template>
@@ -162,8 +162,8 @@
       <h2>Relatórios</h2>
       <div class="card">
         <div class="filters">
-          <label>De</label><input id="rep-from" type="date" />
-          <label>Até</label><input id="rep-to" type="date" />
+          <label for="rep-from">De</label><input id="rep-from" type="date" />
+          <label for="rep-to">Até</label><input id="rep-to" type="date" />
           <button id="rep-apply-btn">Aplicar</button>
         </div>
       </div>
@@ -172,17 +172,17 @@
         <div class="card">
           <h3>Resumo de vendas</h3>
           <p>Total: <strong id="rep-total">R$ 0,00</strong> (<span id="rep-count">0</span> vendas)</p>
-          <table class="table"><thead><tr><th>Dia</th><th>Total</th></tr></thead><tbody id="rep-by-day"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Dia</th><th>Total</th></tr></thead><tbody id="rep-by-day"></tbody></table></div>
         </div>
         <div class="card">
           <h3>Mais vendidos</h3>
-          <table class="table"><thead><tr><th>Produto</th><th>Qtd vendida</th><th>Receita</th></tr></thead><tbody id="rep-top-products"></tbody></table>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Qtd vendida</th><th>Receita</th></tr></thead><tbody id="rep-top-products"></tbody></table></div>
         </div>
       </div>
 
       <div class="card">
         <h3>Produtos parados (capital parado em estoque)</h3>
-        <table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Capital parado</th></tr></thead><tbody id="rep-slow-moving"></tbody></table>
+        <div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Estoque</th><th>Capital parado</th></tr></thead><tbody id="rep-slow-moving"></tbody></table></div>
       </div>
     </section>
   </template>
@@ -194,10 +194,10 @@
         <button id="new-user-btn">+ Novo usuário</button>
       </div>
       <div class="card">
-        <table class="table">
+        <div class="table-wrap"><table class="table">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="users-list"></tbody>
-        </table>
+        </table></div>
       </div>
     </section>
   </template>
@@ -206,12 +206,12 @@
     <form id="user-form" class="card">
       <h3 id="user-form-title">Novo usuário</h3>
       <input type="hidden" id="u-id" />
-      <label>Nome</label><input id="u-name" required maxlength="120" />
-      <label id="u-email-label">E-mail</label><input id="u-email" type="email" required maxlength="255" />
-      <label>Perfil</label>
+      <label for="u-name">Nome</label><input id="u-name" required maxlength="120" />
+      <label id="u-email-label" for="u-email">E-mail</label><input id="u-email" type="email" required maxlength="255" />
+      <label for="u-role">Perfil</label>
       <select id="u-role"><option value="CASHIER">Funcionário (caixa)</option><option value="ADMIN">Administrador</option></select>
-      <label id="u-active-label">Ativo</label><input id="u-active" type="checkbox" checked />
-      <label id="u-password-label">Senha</label><input id="u-password" type="password" minlength="8" maxlength="200" />
+      <label id="u-active-label" for="u-active">Ativo</label><input id="u-active" type="checkbox" checked />
+      <label id="u-password-label" for="u-password">Senha</label><input id="u-password" type="password" minlength="8" maxlength="200" />
       <div class="form-actions">
         <button type="submit">Salvar</button>
         <button type="button" id="user-cancel-btn" class="secondary">Cancelar</button>

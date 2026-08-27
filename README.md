@@ -91,12 +91,37 @@ Isso também reativa a conta, caso tenha sido desativada por engano.
 
 ## Auditoria de segurança realizada
 
-Depois da construção inicial, o projeto passou por duas rodadas de auditoria de segurança: releitura de cada arquivo, correção das brechas encontradas, e uma bateria de testes reais (não só análise de código) contra um PostgreSQL de verdade rodando em Docker — incluindo simulações completas de ataque (funcionário mal-intencionado, sessão comprometida, força bruta). Entre os testes: 20 vendas simultâneas contra um produto com 10 unidades em estoque (resultado: exatamente 10 sucessos, 10 rejeitados, estoque final zero — nunca negativo), tentativas de SQL injection em parâmetros de rota e campos de texto (neutralizadas pelo Prisma), payload XSS armazenado e verificado ao vivo no navegador (nunca executa — vira texto escapado na tela), JWT adulterado e ataque `alg:none` (ambos rejeitados), queda total do banco de dados no meio de requisições (servidor devolveu erro limpo e se recuperou sozinho, sem reiniciar), JSON malformado/gigante/com aninhamento profundo, datas de calendário impossíveis (ex: 30 de fevereiro), bypass de autorização em cada rota administrativa a partir de uma conta de funcionário, **um funcionário demitido que continuava vendendo com o token antigo** (achado crítico, corrigido), **contorno do limite de tentativas de login forjando o cabeçalho X-Forwarded-For** (achado crítico, corrigido), adulteração de preço/vendedor no corpo da requisição de venda (ignorada — servidor sempre recalcula do banco), directory traversal nos arquivos estáticos, e poluição de protótipo via query string. Treze brechas reais foram encontradas e corrigidas no total — detalhes de cada uma foram entregues em conversa.
+O projeto passou por várias rodadas de auditoria de segurança: releitura de cada arquivo, correção das brechas encontradas, e uma bateria de testes reais (não só análise de código) contra um PostgreSQL de verdade rodando em Docker — incluindo simulações completas de ataque (funcionário mal-intencionado, sessão comprometida, força bruta). Entre os testes: 20 vendas simultâneas contra um produto com 10 unidades em estoque (resultado: exatamente 10 sucessos, 10 rejeitados, estoque final zero — nunca negativo), tentativas de SQL injection em parâmetros de rota e campos de texto (neutralizadas pelo Prisma), payload XSS armazenado e verificado ao vivo no navegador (nunca executa — vira texto escapado na tela), JWT adulterado e ataque `alg:none` (ambos rejeitados), queda total do banco de dados no meio de requisições (servidor devolveu erro limpo e se recuperou sozinho, sem reiniciar), JSON malformado/gigante/com aninhamento profundo, datas de calendário impossíveis (ex: 30 de fevereiro), bypass de autorização em cada rota administrativa a partir de uma conta de funcionário, **um funcionário demitido que continuava vendendo com o token antigo** (achado crítico, corrigido), **contorno do limite de tentativas de login forjando o cabeçalho X-Forwarded-For** (achado crítico, corrigido), adulteração de preço/vendedor no corpo da requisição de venda (ignorada — servidor sempre recalcula do banco), directory traversal nos arquivos estáticos, poluição de protótipo via query string, e **uma condição de corrida que perdia 14 de 30 entradas de estoque simultâneas silenciosamente** (achado crítico, corrigido). Vinte e uma brechas de segurança reais foram encontradas e corrigidas no total.
 
-## Testes realizados
+## Auditoria de qualidade, performance e UX
+
+Além da segurança, o projeto passou por uma rodada de auditoria de qualidade/UX/performance:
+
+- **Campo de quantidade no carrinho perdia o foco a cada tecla** — o carrinho de vendas recriava o `<input>` inteiro a cada dígito digitado, então o segundo dígito de "12" nunca chegava a ser digitado no campo. Corrigido para atualizar só o subtotal/total sem recriar o input; testado ao vivo (foco confirmado persistindo em múltiplas teclas seguidas).
+- **N+1 query na criação de vendas**: uma venda com N itens fazia N consultas sequenciais de leitura antes de N gravações. Corrigido para 1 consulta em lote + N gravações (as gravações continuam individuais, pois cada uma precisa do `UPDATE` atômico condicional que impede sobrevenda).
+- **Overflow horizontal em telas estreitas**: tabelas largas (ex: Produtos, com 8 colunas) empurravam a página inteira para o lado num celular. Corrigido envolvendo cada tabela num contêiner com rolagem própria — testado matematicamente via navegador (largura da página sem overflow, tabela rolando dentro do próprio espaço).
+- **Acessibilidade de formulários**: 15 campos tinham `<label>` visualmente ao lado do campo mas sem associação programática (`for`/`id`) — leitores de tela não conseguiam ligar o rótulo ao campo. Corrigido em todos os formulários, e adicionado `aria-label` nos campos de busca (que não têm rótulo visível por design).
+- **Duplicação de lógica** entre painel, relatórios e e-mail de alerta (cálculo de "estoque baixo/prestes a esgotar" e "produtos parados" estava repetido em 3 lugares) — extraída para funções compartilhadas em `src/forecast.js`.
+- **Produto desativado não podia ser reativado** — funcional, não só de segurança: cobre o caso de uso central de desfazer uma desativação por engano.
+
+## Testes automatizados
+
+```bash
+npm test
+```
+
+Roda uma suíte de testes de integração ([test/integration.test.js](test/integration.test.js)) com o test runner nativo do Node (`node:test`, sem dependências novas) contra um PostgreSQL real — sobe a aplicação de verdade em memória e faz requisições HTTP reais. Cobre regressão dos bugs mais graves encontrados na auditoria: condição de corrida em estoque concorrente (entradas e vendas simultâneas), revogação de sessão em tempo real, autorização por papel, CSRF, SQL injection, validação de data de calendário, limite de overflow numérico, e reativação de produto.
+
+**Atenção**: a suíte apaga todos os dados do banco apontado por `DATABASE_URL` antes de rodar. Use sempre um banco dedicado a testes — nunca aponte para dados reais. Por segurança, a suíte recusa rodar a menos que o nome do banco contenha "test", ou que `ALLOW_DB_RESET=true` seja definido explicitamente.
+
+## Testes realizados manualmente
+
+Além da suíte automatizada, o sistema foi testado manualmente de ponta a ponta (API e navegador) em cada rodada de mudança: login, CRUD de produtos, venda com baixa de estoque, cancelamento de venda, entradas/ajustes de estoque, relatórios, gestão de usuários, alerta por e-mail, e responsividade em desktop/mobile.
 
 ## Próximos passos sugeridos (fora do escopo inicial)
 
 - Leitor de código de barras via câmera do celular (a busca por código de barras já funciona digitando).
 - Exportação de relatórios em PDF/Excel.
 - Validade por lote de compra (hoje a validade é por produto, conforme decidido).
+- Busca de produtos insensível a acento (hoje "feijao" não encontra "Feijão" — só busca por substring literal).
+- Estados de carregamento explícitos na interface (hoje uma requisição lenta não mostra nenhum indicador visual de "carregando").

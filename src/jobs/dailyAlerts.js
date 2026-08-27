@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const config = require('../config');
 const prisma = require('../db');
-const { getStockForecast } = require('../forecast');
+const { getStockForecast, splitForecastAlerts } = require('../forecast');
 
 function buildTransport() {
   if (!config.smtp.host) return null;
@@ -31,8 +31,7 @@ function buildTransport() {
 
 async function buildAlertText() {
   const forecast = await getStockForecast();
-  const lowStock = forecast.filter((p) => p.lowStock);
-  const soonOut = forecast.filter((p) => !p.lowStock && p.daysUntilStockout !== null && p.daysUntilStockout <= 7);
+  const { lowStock, soonOut } = splitForecastAlerts(forecast);
 
   const now = new Date();
   const expiringUntil = new Date(Date.now() + config.expiryAlertDays * 24 * 60 * 60 * 1000);

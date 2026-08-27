@@ -13,6 +13,7 @@
     "seed": "node prisma/seed.js",
     "seed:products": "node prisma/seedProducts.js",
     "reset-password": "node prisma/resetPassword.js",
+    "test": "node --test test/integration.test.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

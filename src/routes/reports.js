@@ -1,7 +1,7 @@
 const express = require('express');
 const prisma = require('../db');
 const { authenticate, authorize } = require('../auth');
-const { getStockForecast } = require('../forecast');
+const { getStockForecast, getSlowMovingProducts } = require('../forecast');
 const { parseDateParam, clampIntParam } = require('../queryHelpers');
 
 const router = express.Router();
@@ -65,24 +65,7 @@ router.get('/top-products', async (req, res) => {
 
 router.get('/slow-moving', async (req, res) => {
   const days = clampIntParam(req.query.days, { min: 1, max: 365, fallback: 60 });
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-  const [stockedProducts, recentSales] = await Promise.all([
-    prisma.product.findMany({ where: { active: true, currentStock: { gt: 0 } }, select: { id: true, name: true, currentStock: true, costPrice: true } }),
-    prisma.stockMovement.groupBy({ by: ['productId'], where: { type: 'SALE', createdAt: { gte: since } }, _sum: { quantity: true } }),
-  ]);
-
-  const soldRecently = new Set(recentSales.map((r) => r.productId));
-  const slowMoving = stockedProducts
-    .filter((p) => !soldRecently.has(p.id))
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      currentStock: Number(p.currentStock),
-      capitalParado: Number((Number(p.currentStock) * Number(p.costPrice)).toFixed(2)),
-    }));
-
-  res.json(slowMoving);
+  res.json(await getSlowMovingProducts(days));
 });
 
 module.exports = router;

@@ -108,6 +108,10 @@ button.small { padding: 4px 10px; font-size: 0.8rem; margin: 0; }
 
 .section-head { display: flex; justify-content: space-between; align-items: center; }
 
+/* Em telas estreitas, uma tabela larga (ex: a de Produtos, com 8 colunas)
+   rola dentro do próprio contêiner em vez de empurrar a página inteira para
+   o lado — o corpo da página nunca deve ter scroll horizontal. */
+.table-wrap { width: 100%; overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .table th, .table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .table th { color: var(--muted); font-weight: 600; }

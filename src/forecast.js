@@ -47,4 +47,41 @@ async function getStockForecast() {
   return forecast;
 }
 
-module.exports = { getStockForecast };
+// Separa o resultado de getStockForecast() em "abaixo do mínimo" e
+// "previsão de acabar em breve, mas ainda não abaixo do mínimo" — usado
+// tanto no painel quanto no e-mail de alerta diário, que antes duplicavam
+// exatamente esta mesma lógica de filtro em dois arquivos diferentes.
+function splitForecastAlerts(forecast) {
+  const lowStock = forecast.filter((p) => p.lowStock);
+  const soonOut = forecast.filter((p) => !p.lowStock && p.daysUntilStockout !== null && p.daysUntilStockout <= 7);
+  return { lowStock, soonOut };
+}
+
+// Produtos com estoque > 0 mas sem nenhuma venda registrada nos últimos
+// `days` dias — ajuda a identificar capital parado em itens que não giram.
+// Compartilhado entre o painel (janela fixa de 60 dias) e o relatório
+// dedicado (janela configurável pelo usuário), que antes duplicavam a
+// mesma sequência de consultas.
+async function getSlowMovingProducts(days) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [stockedProducts, recentSales] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true, currentStock: { gt: 0 } },
+      select: { id: true, name: true, currentStock: true, costPrice: true },
+    }),
+    prisma.stockMovement.groupBy({ by: ['productId'], where: { type: 'SALE', createdAt: { gte: since } }, _sum: { quantity: true } }),
+  ]);
+
+  const soldRecently = new Set(recentSales.map((r) => r.productId));
+  return stockedProducts
+    .filter((p) => !soldRecently.has(p.id))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      currentStock: Number(p.currentStock),
+      capitalParado: Number((Number(p.currentStock) * Number(p.costPrice)).toFixed(2)),
+    }));
+}
+
+module.exports = { getStockForecast, splitForecastAlerts, getSlowMovingProducts };
