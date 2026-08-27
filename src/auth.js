@@ -1,0 +1,108 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const config = require('./config');
+const prisma = require('./db');
+
+const COOKIE_NAME = 'cv_token';
+const COOKIE_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 horas
+const JWT_ALGORITHM = 'HS256';
+
+function hashPassword(password) {
+  return bcrypt.hash(password, 12);
+}
+
+function verifyPassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
+// Hash "isca" gerado uma única vez na subida do processo. Usado para que o
+// login gaste sempre o mesmo tempo de CPU (o custo do bcrypt.compare) tanto
+// para e-mail inexistente quanto para senha errada — sem isso, responder
+// mais rápido quando o e-mail não existe vira um oráculo de tempo que permite
+// a um atacante descobrir quais e-mails estão cadastrados no sistema.
+const DUMMY_HASH_PROMISE = bcrypt.hash('senha-isca-para-comparacao-de-tempo-constante', 12);
+
+function signToken(user) {
+  return jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, {
+    expiresIn: config.jwtExpiresIn,
+    algorithm: JWT_ALGORITHM,
+  });
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: 'lax',
+    maxAge: COOKIE_MAX_AGE_MS,
+    path: '/',
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie(COOKIE_NAME, { path: '/' });
+}
+
+async function authenticate(req, res, next) {
+  const token = req.cookies ? req.cookies[COOKIE_NAME] : undefined;
+  if (!token) return res.status(401).json({ error: 'Não autenticado.' });
+
+  let payload;
+  try {
+    payload = jwt.verify(token, config.jwtSecret, { algorithms: [JWT_ALGORITHM] });
+  } catch {
+    return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
+  }
+
+  // O token só prova quem o usuário ERA no momento do login. Sem revalidar
+  // no banco a cada requisição, desativar uma conta ou mudar seu papel não
+  // teria efeito nenhum até o token expirar (até 8h) — um funcionário
+  // demitido continuaria conseguindo vender, e um admin rebaixado manteria
+  // acesso de admin. O custo é uma consulta indexada por chave primária,
+  // desprezível para o volume de um sistema desse porte.
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true, role: true, active: true },
+  });
+  if (!user || !user.active) {
+    return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
+  }
+
+  req.user = { sub: user.id, role: user.role };
+  next();
+}
+
+function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Sem permissão para executar esta ação.' });
+    }
+    next();
+  };
+}
+
+// Defesa leve contra CSRF: exige um cabeçalho customizado em requisições que
+// alteram estado (POST/PUT/PATCH/DELETE). Navegadores só enviam cabeçalhos
+// customizados em requisições same-origin feitas via fetch/XHR — formulários
+// HTML "simples" forjados em outro site não conseguem definir este cabeçalho,
+// então essa checagem barra a submissão forjada mesmo que o cookie seja enviado.
+function requireFetchHeader(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  if (req.get('X-Requested-With') !== 'fetch') {
+    return res.status(403).json({ error: 'Requisição bloqueada.' });
+  }
+  next();
+}
+
+module.exports = {
+  COOKIE_NAME,
+  DUMMY_HASH_PROMISE,
+  hashPassword,
+  verifyPassword,
+  signToken,
+  setAuthCookie,
+  clearAuthCookie,
+  authenticate,
+  authorize,
+  requireFetchHeader,
+};
