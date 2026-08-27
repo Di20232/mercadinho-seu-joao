@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.*.local
+.claude
+test
+*.log
+npm-debug.log*
+coverage
+dist

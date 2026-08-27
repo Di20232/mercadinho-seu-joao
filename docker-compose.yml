@@ -1,0 +1,68 @@
+# Ambiente local persistente: sobe o PostgreSQL e a aplicação como
+# containers de longa duração (restart: unless-stopped), com os dados do
+# banco gravados num volume nomeado — os dados sobrevivem a "docker compose
+# stop", ao fechamento do terminal, e até a reinícios da máquina (desde que
+# o Docker Desktop volte a subir). Só desaparecem se alguém rodar
+# "docker compose down -v" (o -v é que apaga o volume).
+#
+# ATENÇÃO: os valores padrão abaixo (senha do banco, JWT_SECRET) são só para
+# uso local/demonstração. Para publicar isso na internet de verdade, siga a
+# seção "Publicando na nuvem" do README.md em vez deste arquivo — lá o
+# JWT_SECRET é gerado forte, o banco fica gerenciado (Neon/Supabase/Render) e
+# o tráfego roda em HTTPS de verdade.
+#
+# Uso:
+#   docker compose up -d --build
+#   docker compose exec app npm run seed
+#   docker compose exec app npm run seed:products   # opcional
+#   docker compose exec app npm run simulate:sales  # opcional
+#   Acesse http://localhost:3100
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: contro_vend
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
+    volumes:
+      - contro_vend_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme_local_only}@db:5432/contro_vend?schema=public
+      JWT_SECRET: ${JWT_SECRET:-troque_este_segredo_local_de_desenvolvimento}
+      JWT_EXPIRES_IN: 8h
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3100}
+      COOKIE_SECURE: "false"
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Contro Vend <no-reply@controvend.local>}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+      LOW_STOCK_ALERT_HOUR: ${LOW_STOCK_ALERT_HOUR:-8}
+      EXPIRY_ALERT_DAYS: ${EXPIRY_ALERT_DAYS:-7}
+      FORECAST_WINDOW_DAYS: ${FORECAST_WINDOW_DAYS:-30}
+      # Só usados pelo "docker compose exec app npm run seed" (não pelo
+      # servidor em si) — defina no seu .env se quiser outro e-mail/senha.
+      ADMIN_NAME: ${ADMIN_NAME:-Dono do Mercado}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-TrocarEssaSenha123!}
+    ports:
+      - "3100:3000"
+
+volumes:
+  contro_vend_db_data:

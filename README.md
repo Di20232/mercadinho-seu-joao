@@ -36,6 +36,25 @@ npm run dev
 
 Acesse `http://localhost:3000`.
 
+## Rodando com Docker Compose (ambiente local persistente)
+
+Alternativa ao passo a passo acima para quem já tem Docker instalado: sobe o app **e** o banco como containers de longa duração, com os dados gravados num volume — sobrevivem a fechar o terminal, parar os containers, e até reiniciar a máquina (o Docker Desktop precisa voltar a subir).
+
+```bash
+docker compose up -d --build
+docker compose exec app npm run seed             # cria o administrador (senha padrão: TrocarEssaSenha123!)
+docker compose exec app npm run seed:products     # opcional
+docker compose exec app npm run simulate:sales    # opcional: histórico de vendas de exemplo
+```
+
+Acesse `http://localhost:3100`. Para customizar (senha do banco, e-mail/senha do administrador, SMTP), crie um `.env` na raiz do projeto — o `docker-compose.yml` lê as mesmas variáveis do `.env.example`, com valores padrão só para uso local.
+
+- `docker compose stop` / `docker compose start` — para e liga de novo sem perder nada.
+- `docker compose down` (sem `-v`) — remove os containers mas mantém o volume/dados.
+- `docker compose down -v` — **apaga os dados de vez** (só use se for isso mesmo que quiser).
+
+⚠️ Este `docker-compose.yml` é para desenvolvimento/demonstração local (roda em `http://` sem HTTPS, com um `JWT_SECRET` padrão). Para publicar de verdade na internet, siga a seção **Publicando na nuvem** abaixo, não este arquivo.
+
 ### Carga de produtos de exemplo
 
 `npm run seed:products` ([prisma/seedProducts.js](prisma/seedProducts.js)) insere um catálogo de exemplo de mercadinho (arroz, feijão, laticínios, limpeza, higiene etc.), com datas de validade variadas — alguns vencendo em poucos dias, outros com validade longa, e alguns sem validade (produtos de limpeza/higiene, como definido para o sistema). Alguns produtos já entram com estoque abaixo do mínimo, então o Painel mostra alertas reais assim que você loga.
@@ -98,6 +117,8 @@ Isso também reativa a conta, caso tenha sido desativada por engano.
 ## Auditoria de segurança realizada
 
 O projeto passou por várias rodadas de auditoria de segurança: releitura de cada arquivo, correção das brechas encontradas, e uma bateria de testes reais (não só análise de código) contra um PostgreSQL de verdade rodando em Docker — incluindo simulações completas de ataque (funcionário mal-intencionado, sessão comprometida, força bruta). Entre os testes: 20 vendas simultâneas contra um produto com 10 unidades em estoque (resultado: exatamente 10 sucessos, 10 rejeitados, estoque final zero — nunca negativo), tentativas de SQL injection em parâmetros de rota e campos de texto (neutralizadas pelo Prisma), payload XSS armazenado e verificado ao vivo no navegador (nunca executa — vira texto escapado na tela), JWT adulterado e ataque `alg:none` (ambos rejeitados), queda total do banco de dados no meio de requisições (servidor devolveu erro limpo e se recuperou sozinho, sem reiniciar), JSON malformado/gigante/com aninhamento profundo, datas de calendário impossíveis (ex: 30 de fevereiro), bypass de autorização em cada rota administrativa a partir de uma conta de funcionário, **um funcionário demitido que continuava vendendo com o token antigo** (achado crítico, corrigido), **contorno do limite de tentativas de login forjando o cabeçalho X-Forwarded-For** (achado crítico, corrigido), adulteração de preço/vendedor no corpo da requisição de venda (ignorada — servidor sempre recalcula do banco), directory traversal nos arquivos estáticos, poluição de protótipo via query string, e **uma condição de corrida que perdia 14 de 30 entradas de estoque simultâneas silenciosamente** (achado crítico, corrigido). Vinte e uma brechas de segurança reais foram encontradas e corrigidas no total.
+
+Depois do redesenho visual e da adição do script de simulação de vendas, foi feita uma rodada de regressão (suíte automatizada + cabeçalhos de segurança + CSRF + rate limit + `npm audit`, tudo contra um banco descartável separado) para confirmar que nenhuma mudança recente abriu brecha nova — nenhuma encontrada. Nessa mesma rodada, ao montar o `docker-compose.yml`, a imagem baseada em Alpine falhou silenciosamente ao aplicar migrations (o motor do Prisma não detectava a versão de OpenSSL do Alpine e entrava em loop de reinício) — trocada por uma base Debian (`node:20-bookworm-slim`), recomendada pelo próprio Prisma para evitar essa classe de problema.
 
 ## Auditoria de qualidade, performance e UX
 
