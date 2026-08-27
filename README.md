@@ -2,6 +2,8 @@
 
 Sistema web de controle de vendas e estoque para pequeno comerciante (mercadinho de secos e molhados). Roda na nuvem — não precisa ser instalado na máquina do cliente, só um navegador.
 
+📖 **[Documentação técnica completa](DOCUMENTATION.md)** — stack tecnológica, arquitetura, modelo de dados, perfis de acesso e detalhamento de cada funcionalidade. Este README cobre o dia a dia: instalar, rodar, publicar e as decisões de segurança.
+
 ## O que o sistema faz
 
 - **Vendas**: tela de caixa (busca produto por nome/código de barras, monta o carrinho, confirma a venda). Cada venda desconta o estoque automaticamente.
