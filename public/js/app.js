@@ -9,6 +9,37 @@ function activeTemplate(name) {
   content.appendChild(tpl.content.cloneNode(true));
 }
 
+// Abre um <template> como um modal sobreposto (fundo escurecido + card
+// centralizado), em vez de anexado ao final do conteúdo da aba. Sem isso, o
+// formulário de editar produto/usuário aparecia depois de toda a lista —
+// numa tela com muitos produtos, era preciso rolar a página inteira até o
+// fim para achar o formulário que acabou de abrir.
+function openModal(templateId) {
+  const backdrop = el('div', { class: 'modal-backdrop' });
+  const tpl = document.getElementById(templateId);
+  backdrop.appendChild(tpl.content.cloneNode(true));
+  document.body.appendChild(backdrop);
+  document.body.style.overflow = 'hidden';
+
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') closeModal(backdrop);
+  };
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeModal(backdrop);
+  });
+  document.addEventListener('keydown', onKeydown);
+  backdrop._onKeydown = onKeydown;
+
+  return backdrop;
+}
+
+function closeModal(backdrop) {
+  if (!backdrop) return;
+  if (backdrop._onKeydown) document.removeEventListener('keydown', backdrop._onKeydown);
+  backdrop.remove();
+  document.body.style.overflow = '';
+}
+
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   const renderers = {
@@ -275,8 +306,7 @@ async function loadProducts() {
 }
 
 function openProductForm(product) {
-  const tpl = document.getElementById('tpl-product-form');
-  content.appendChild(tpl.content.cloneNode(true));
+  const modal = openModal('tpl-product-form');
 
   const isEdit = Boolean(product);
   document.getElementById('product-form-title').textContent = isEdit ? 'Editar produto' : 'Novo produto';
@@ -302,7 +332,7 @@ function openProductForm(product) {
       deleteBtn.addEventListener('click', async () => {
         if (!confirm(`Desativar "${product.name}"? Ele deixará de aparecer em vendas novas.`)) return;
         await api.del(`/products/${product.id}`);
-        closeProductForm();
+        closeModal(modal);
         await loadProducts();
       });
     } else {
@@ -313,13 +343,13 @@ function openProductForm(product) {
       deleteBtn.classList.remove('danger');
       deleteBtn.addEventListener('click', async () => {
         await api.put(`/products/${product.id}`, { active: true });
-        closeProductForm();
+        closeModal(modal);
         await loadProducts();
       });
     }
   }
 
-  document.getElementById('product-cancel-btn').addEventListener('click', closeProductForm);
+  document.getElementById('product-cancel-btn').addEventListener('click', () => closeModal(modal));
 
   document.getElementById('product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -340,18 +370,13 @@ function openProductForm(product) {
     try {
       if (isEdit) await api.put(`/products/${product.id}`, payload);
       else await api.post('/products', payload);
-      closeProductForm();
+      closeModal(modal);
       await loadProducts();
     } catch (err) {
       msg.textContent = err.message;
       msg.hidden = false;
     }
   });
-}
-
-function closeProductForm() {
-  const form = document.getElementById('product-form');
-  if (form) form.remove();
 }
 
 // ---------- Estoque ----------
@@ -487,8 +512,7 @@ async function loadUsers() {
 }
 
 function openUserForm(user) {
-  const tpl = document.getElementById('tpl-user-form');
-  content.appendChild(tpl.content.cloneNode(true));
+  const modal = openModal('tpl-user-form');
   const isEdit = Boolean(user);
 
   document.getElementById('user-form-title').textContent = isEdit ? 'Editar usuário' : 'Novo usuário';
@@ -507,7 +531,7 @@ function openUserForm(user) {
     document.getElementById('u-active').checked = user.active;
   }
 
-  document.getElementById('user-cancel-btn').addEventListener('click', () => document.getElementById('user-form').remove());
+  document.getElementById('user-cancel-btn').addEventListener('click', () => closeModal(modal));
 
   document.getElementById('user-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -532,7 +556,7 @@ function openUserForm(user) {
           password,
         });
       }
-      document.getElementById('user-form').remove();
+      closeModal(modal);
       await loadUsers();
     } catch (err) {
       msg.textContent = err.message;

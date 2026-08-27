@@ -284,5 +284,28 @@ button.small { padding: 6px 12px; font-size: 0.8125rem; margin: 0; box-shadow: n
 .badge.bad { background: var(--danger-soft); color: var(--danger); }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
 
+/* Formulários de editar/criar produto e usuário abrem aqui — flutuando por
+   cima da tela, centralizados — em vez de anexados ao final da lista de
+   produtos. Numa lista longa, o formulário aparecia só depois de rolar a
+   página inteira; como modal, ele fica visível na hora, não importa
+   quantos itens existam na tabela por trás. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.modal-backdrop .card {
+  width: 100%;
+  max-width: 480px;
+  margin: 0;
+  box-shadow: var(--shadow-md);
+}
+
 [data-admin-only] { display: none; }
 body.role-admin [data-admin-only] { display: revert; }
