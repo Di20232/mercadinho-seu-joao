@@ -112,13 +112,22 @@ def semaforo_validade(lotes, dia=None, dias_aviso=3):
     return situacao
 
 
-def artigo(nome):
-    """'o' ou 'a' para o nome do produto.
+# Palavras femininas comuns no mercadinho que nao terminam em "a"
+FEMININAS = {"carne", "alface", "couve", "maionese", "embalagem", "salsicha",
+             "gelatina", "flor", "erva"}
 
-    Regra simples do portugues: primeira palavra terminada em 'a' costuma ser
-    feminina (banana, cerveja, carne moida). O resto fica no masculino.
+
+def artigo(nome):
+    """'o' ou 'a' para o nome do produto, para a frase sair natural.
+
+    Primeira palavra terminada em 'a' costuma ser feminina (banana, cerveja,
+    linguica); o resto fica no masculino, com uma lista curta de excecoes
+    (carne, alface...). Se aparecer um produto que a regra erra, e' so
+    acrescentar a palavra em FEMININAS.
     """
     primeira = (nome or "").strip().split(" ")[0].lower()
+    if primeira in FEMININAS:
+        return "a"
     return "a" if primeira.endswith(("a", "ã")) else "o"
 
 

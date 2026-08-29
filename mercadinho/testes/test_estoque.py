@@ -67,3 +67,19 @@ def test_produto_nao_perecivel_ignora_validade(app, dono):
                                      data_validade=date.today() + timedelta(days=30))
     app.extensions["sqlalchemy"].session.commit()
     assert lote.data_validade is None
+
+
+def test_frases_saem_no_genero_certo(app):
+    """As frases da tela precisam soar como o dono fala."""
+    from app.servicos import regras
+
+    assert regras.artigo("Carne moída") == "a"
+    assert regras.artigo("Banana") == "a"
+    assert regras.artigo("Linguiça toscana") == "a"
+    assert regras.artigo("Contrafilé") == "o"
+    assert regras.artigo("Leite integral 1L") == "o"
+    assert regras.artigo("Carvão 3kg") == "o"
+
+    produto = criar_produto("Carne moída", unidade_medida="kg")
+    frase = regras.frase_estoque(produto, Decimal("0.6"), Decimal("6"), regras.CRITICO)
+    assert frase == "Tá acabando a Carne moída: só tem 0,6 kg"
