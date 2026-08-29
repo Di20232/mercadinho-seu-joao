@@ -26,5 +26,11 @@ git commit -q -m "Atualiza $RESUMO" \
   -m "Commit automático feito ao fim da resposta do Claude Code." \
   -m "Co-Authored-By: Claude <noreply@anthropic.com>" || exit 0
 
-git push -q origin "$BRANCH" 2>/dev/null || git push -q -u origin "$BRANCH" 2>/dev/null
+# Envia para todos os remotes configurados, para nao deixar nenhuma copia
+# do projeto para tras (ex.: contro-vend e mercadinho-seu-joao).
+for REMOTE in $(git remote); do
+  git push -q "$REMOTE" "$BRANCH" 2>/dev/null ||
+    git push -q -u "$REMOTE" "$BRANCH" 2>/dev/null
+done
+
 exit 0

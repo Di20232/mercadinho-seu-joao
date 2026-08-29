@@ -57,6 +57,11 @@ O script tem duas travas de segurança:
 - **Nunca commita em `master`/`main`** — só em branches de trabalho.
 - **Não cria commit vazio** — se nada mudou, ele sai sem fazer nada.
 
+O push vai para **todos os remotes configurados**, então as duas cópias do projeto
+(`contro-vend` e `mercadinho-seu-joao`) ficam sempre em dia. Se você adicionar um
+remote que não deva receber push automático (o `upstream` de um fork, por exemplo),
+ajuste o laço no fim do script.
+
 Rodando à mão: `scripts/auto-commit.sh`. Para desligar o automático, apague o bloco
 `hooks` do `.claude/settings.json` ou use `/hooks` no Claude Code.
 
