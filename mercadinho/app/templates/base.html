@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1b7f4b">
+  <title>{% block titulo %}Mercadinho do Seu João{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <!-- Bootstrap e ícones servidos pelo próprio sistema: a loja continua
+       funcionando mesmo com a internet oscilando. -->
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/estilo.css') }}" rel="stylesheet">
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<header class="topo">
+  <div class="container-fluid d-flex align-items-center gap-2 py-2">
+    <a class="marca" href="{{ url_for('painel.inicio') }}">🛒 <span>Mercadinho</span></a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <a href="{{ url_for('alertas.listar') }}" class="btn btn-sm btn-topo position-relative" aria-label="Avisos">
+        <i class="bi bi-bell-fill"></i>
+        {% set qtd_avisos = current_user.alertas | selectattr('status.value','equalto','pendente') | list | length %}
+      </a>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-topo dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-person-circle"></i>
+          <span class="d-none d-sm-inline">{{ current_user.nome.split()[0] }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><span class="dropdown-item-text small text-muted">{{ current_user.nome }} — {{ current_user.papel.rotulo }}</span></li>
+          <li><hr class="dropdown-divider"></li>
+          {% if current_user.pode('ver_relatorios') %}
+          <li><a class="dropdown-item" href="{{ url_for('relatorios.perdas') }}"><i class="bi bi-graph-down-arrow me-2"></i>Relatório de perdas</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('movimentos.historico') }}"><i class="bi bi-clock-history me-2"></i>Histórico</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('painel.consolidado') }}"><i class="bi bi-clipboard-data me-2"></i>Painel completo</a></li>
+          {% endif %}
+          {% if current_user.eh_admin %}
+          <li><a class="dropdown-item" href="{{ url_for('usuarios.listar') }}"><i class="bi bi-people me-2"></i>Pessoas e feriados</a></li>
+          {% endif %}
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="{{ url_for('auth.sair') }}"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% if modo_demonstracao %}
+  <div class="faixa-demo">
+    <i class="bi bi-eye"></i> Você está vendo o sistema como se fosse
+    <strong>{{ data_referencia | data }} ({{ data_referencia | dia_semana }})</strong>
+    <form method="post" action="{{ url_for('painel.dia_de_teste') }}" class="d-inline">
+      <button class="btn btn-link btn-sm p-0 align-baseline text-white">voltar para hoje</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+{% endif %}
+
+<main class="conteudo container-fluid px-3 {% if current_user.is_authenticated %}com-menu{% endif %}">
+  {% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
+      <div class="mt-3">
+      {% for categoria, texto in mensagens %}
+        <div class="alert alert-{{ {'ok':'success','erro':'danger','aviso':'warning'}.get(categoria,'info') }} alert-dismissible fade show py-2" role="alert">
+          {{ texto }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block conteudo %}{% endblock %}
+</main>
+
+{% if current_user.is_authenticated %}
+<nav class="menu-inferior">
+  <a href="{{ url_for('painel.inicio') }}" class="{{ 'ativo' if request.endpoint == 'painel.inicio' }}">
+    <i class="bi bi-house-door-fill"></i><span>Início</span>
+  </a>
+  {% if current_user.pode('registrar_saida') %}
+  <a href="{{ url_for('movimentos.saida') }}" class="{{ 'ativo' if request.endpoint == 'movimentos.saida' }}">
+    <i class="bi bi-box-arrow-up"></i><span>Saiu</span>
+  </a>
+  {% endif %}
+  {% if current_user.pode('registrar_entrada') %}
+  <a href="{{ url_for('movimentos.entrada') }}" class="{{ 'ativo' if request.endpoint == 'movimentos.entrada' }}">
+    <i class="bi bi-box-arrow-in-down"></i><span>Chegou</span>
+  </a>
+  {% endif %}
+  <a href="{{ url_for('alertas.listar') }}" class="{{ 'ativo' if request.endpoint == 'alertas.listar' }}">
+    <i class="bi bi-bell-fill"></i><span>Avisos</span>
+  </a>
+  <a href="{{ url_for('compras.listar') }}" class="{{ 'ativo' if request.endpoint == 'compras.listar' }}">
+    <i class="bi bi-cart-check-fill"></i><span>Comprar</span>
+  </a>
+  <a href="{{ url_for('produtos.listar') }}" class="{{ 'ativo' if request.blueprint == 'produtos' }}">
+    <i class="bi bi-tags-fill"></i><span>Produtos</span>
+  </a>
+</nav>
+{% endif %}
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

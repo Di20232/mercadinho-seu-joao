@@ -8,3 +8,8 @@ coverage/
 .DS_Store
 Thumbs.db
 .claude/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/

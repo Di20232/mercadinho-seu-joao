@@ -1,5 +1,11 @@
 # Contro Vend
 
+> 📦 Este repositório tem **dois projetos**:
+> - **`mercadinho/`** — sistema de controle de estoque do *Mercadinho do Seu João*
+>   (Python/Flask + PostgreSQL + Bootstrap). Veja [mercadinho/README.md](mercadinho/README.md).
+> - **raiz do repositório** — o sistema de vendas e estoque descrito abaixo
+>   (Node.js/Express + Prisma + PostgreSQL).
+
 Sistema web de controle de vendas e estoque para pequeno comerciante (mercadinho de secos e molhados). Roda na nuvem — não precisa ser instalado na máquina do cliente, só um navegador.
 
 📖 **[Documentação técnica completa](DOCUMENTATION.md)** — stack tecnológica, arquitetura, modelo de dados, perfis de acesso e detalhamento de cada funcionalidade. Este README cobre o dia a dia: instalar, rodar, publicar e as decisões de segurança.

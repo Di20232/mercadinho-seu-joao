@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}{{ produto.nome }} — Mercadinho{% endblock %}
+{% block conteudo %}
+<div class="d-flex align-items-start justify-content-between mt-3 mb-3">
+  <div>
+    <h1 class="h5 mb-1">{{ produto.nome }}</h1>
+    <div class="small text-muted">{{ produto.setor }} · {{ produto.categoria.rotulo }}</div>
+  </div>
+  {% if current_user.pode('editar_produto') %}
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('produtos.editar', produto_id=produto.id) }}">
+    <i class="bi bi-pencil"></i> Editar
+  </a>
+  {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm mb-3 borda-{{ situacao.cor }}">
+  <div class="card-body">
+    <div class="d-flex align-items-center gap-3">
+      <span class="bolinha grande bg-{{ situacao.cor }}"></span>
+      <div>
+        <div class="display-6 lh-1">{{ situacao.estoque | qtd }} <small class="fs-6 text-muted">{{ produto.unidade_medida }}</small></div>
+        <div class="small text-muted">
+          Mínimo de hoje: {{ situacao.limite | qtd }} {{ produto.unidade_medida }}
+          {% if situacao.dia_de_pico and produto.limite_minimo_fim_de_semana is not none %}
+            <span class="badge text-bg-dark">{{ situacao.motivo_limite }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if situacao.status_estoque != 'ok' %}<p class="mt-3 mb-0 fw-semibold text-{{ situacao.cor }}-emphasis">{{ situacao.frase }}</p>{% endif %}
+    {% if situacao.frase_validade %}<p class="mb-0 text-warning-emphasis">{{ situacao.frase_validade }}</p>{% endif %}
+    {% if situacao.risco_parado %}<p class="mb-0 text-warning-emphasis">Parado há {{ situacao.dias_parado }} dia{{ 's' if situacao.dias_parado != 1 }} sem sair.</p>{% endif %}
+    {% if produto.responsavel_padrao %}
+    <p class="small text-muted mt-2 mb-0"><i class="bi bi-person-check"></i> Quem repõe: {{ produto.responsavel_padrao.nome }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white"><strong>Lotes no estoque</strong></div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead class="table-light"><tr><th>Chegou</th><th>Vence</th><th>Origem</th><th class="text-end">Quantidade</th></tr></thead>
+      <tbody>
+      {% for lote in lotes %}
+        <tr>
+          <td>{{ lote.data_entrada | data }}</td>
+          <td>
+            {% if lote.data_validade %}
+              {{ lote.data_validade | data }}
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="small text-muted">{{ lote.origem_compra or '—' }}</td>
+          <td class="text-end">{{ lote.quantidade | qtd }} {{ produto.unidade_medida }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="text-muted">Sem estoque no momento.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white"><strong>Últimas movimentações</strong></div>
+  <ul class="list-group list-group-flush">
+    {% for m in historico %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <span class="badge {{ {'entrada':'text-bg-success','saida':'text-bg-secondary','perda':'text-bg-danger'}[m.tipo.value] }}">{{ m.tipo.rotulo }}</span>
+        {% if m.motivo %}<span class="small text-muted">{{ m.motivo.rotulo }}</span>{% endif %}
+        <div class="small text-muted">{{ m.data_hora | data_hora }} · {{ m.usuario.nome }}</div>
+      </div>
+      <span>{{ m.quantidade | qtd }} {{ produto.unidade_medida }}</span>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted">Nenhuma movimentação ainda.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

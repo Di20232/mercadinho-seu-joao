@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block titulo %}Início — Mercadinho{% endblock %}
+{% block conteudo %}
+
+<div class="d-flex align-items-baseline justify-content-between mt-3 mb-2">
+  <h1 class="h5 mb-0">Como está o estoque</h1>
+  <span class="text-muted small">{{ dia | data }} · {{ dia | dia_semana }}</span>
+</div>
+
+{% if dia_de_pico %}
+<div class="aviso-pico mb-3">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Hoje é <strong>{{ motivo_limite }}</strong>: os produtos que vendem mais no fim de semana
+  precisam de estoque maior. O sistema já está cobrando o limite reforçado.
+</div>
+{% endif %}
+
+<div class="row g-2 mb-3">
+  <div class="col-4">
+    <a href="?ver=problemas" class="cartao-semaforo bg-danger-subtle border-danger">
+      <div class="numero text-danger">{{ resumo.critico }}</div>
+      <div class="rotulo">Tá acabando</div>
+    </a>
+  </div>
+  <div class="col-4">
+    <a href="?ver=problemas" class="cartao-semaforo bg-warning-subtle border-warning">
+      <div class="numero text-warning-emphasis">{{ resumo.atencao }}</div>
+      <div class="rotulo">Tá baixando</div>
+    </a>
+  </div>
+  <div class="col-4">
+    <a href="?ver=todos" class="cartao-semaforo bg-success-subtle border-success">
+      <div class="numero text-success">{{ resumo.ok }}</div>
+      <div class="rotulo">Tudo certo</div>
+    </a>
+  </div>
+</div>
+
+{% if meus_alertas %}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <strong class="small text-uppercase text-muted">
+        {% if current_user.eh_admin %}Avisos da loja{% else %}Seus avisos{% endif %}
+      </strong>
+      <a href="{{ url_for('alertas.listar') }}" class="small">ver todos</a>
+    </div>
+    <ul class="list-unstyled mb-0">
+      {% for alerta in meus_alertas[:3] %}
+      <li class="py-1 d-flex gap-2">
+        <i class="bi {{ 'bi-cart-x text-danger' if alerta.tipo.value == 'limite_minimo' else ('bi-calendar-x text-warning' if alerta.tipo.value == 'validade_proxima' else 'bi-hourglass-split text-warning') }}"></i>
+        <span class="small">{{ alerta.mensagem }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <form class="flex-grow-1">
+    <input type="search" class="form-control" id="busca-lista" placeholder="Procurar produto..."
+           aria-label="Procurar produto">
+  </form>
+  {% if setores %}
+  <form method="get" class="d-flex gap-2">
+    <input type="hidden" name="ver" value="{{ filtro }}">
+    <select name="setor" class="form-select" onchange="this.form.submit()" aria-label="Filtrar por setor">
+      <option value="">Toda a loja</option>
+      {% for s in setores %}
+      <option value="{{ s }}" {{ 'selected' if setor == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+<div class="btn-group w-100 mb-3" role="group">
+  <a href="{{ url_for('painel.inicio', setor=setor, ver='todos') }}"
+     class="btn btn-outline-secondary {{ 'active' if filtro != 'problemas' }}">Tudo</a>
+  <a href="{{ url_for('painel.inicio', setor=setor, ver='problemas') }}"
+     class="btn btn-outline-secondary {{ 'active' if filtro == 'problemas' }}">Só o que precisa de atenção</a>
+</div>
+
+<div id="lista-produtos">
+{% for item in itens %}
+  {% set p = item.produto %}
+  <div class="item-estoque borda-{{ item.cor }}" data-nome="{{ p.nome | lower }}" data-produto="{{ p.id }}">
+    <div class="d-flex align-items-start gap-2">
+      <span class="bolinha bg-{{ item.cor }}" title="{{ item.rotulo }}"></span>
+      <div class="flex-grow-1">
+        <a href="{{ url_for('produtos.detalhe', produto_id=p.id) }}" class="nome-produto">{{ p.nome }}</a>
+        <div class="small text-muted">{{ p.setor }} · mínimo de hoje: {{ item.limite | qtd }} {{ p.unidade_medida }}
+          {% if item.dia_de_pico and p.limite_minimo_fim_de_semana is not none %}
+            <span class="badge text-bg-dark">{{ item.motivo_limite }}</span>
+          {% endif %}
+        </div>
+        {% if item.status_estoque != 'ok' %}
+          <div class="frase-alerta text-{{ item.cor }}-emphasis">{{ item.frase }}</div>
+        {% endif %}
+        {% if item.frase_validade %}
+          <div class="frase-alerta text-warning-emphasis"><i class="bi bi-calendar-x"></i> {{ item.frase_validade }}</div>
+        {% endif %}
+        {% if item.risco_parado %}
+          <div class="frase-alerta text-warning-emphasis">
+            <i class="bi bi-hourglass-split"></i> Parado há {{ item.dias_parado }} dia{{ 's' if item.dias_parado != 1 }} — pode estragar
+          </div>
+        {% endif %}
+      </div>
+      <div class="text-end">
+        <div class="quantidade" data-estoque="{{ p.id }}">{{ item.estoque | qtd }}</div>
+        <div class="small text-muted">{{ p.unidade_medida }}</div>
+        {% if current_user.pode('registrar_saida') and item.estoque > 0 %}
+        <button class="btn btn-sm btn-outline-secondary mt-1 botao-saida-rapida"
+                data-produto="{{ p.id }}" data-nome="{{ p.nome }}" title="Saiu 1 {{ p.unidade_medida }}">
+          −1
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-inbox display-6 d-block mb-2"></i>
+    Nenhum produto por aqui.
+    {% if current_user.pode('cadastrar_produto') %}
+    <div class="mt-3"><a class="btn btn-verde" href="{{ url_for('produtos.novo') }}">Cadastrar o primeiro produto</a></div>
+    {% endif %}
+  </div>
+{% endfor %}
+</div>
+
+{% if current_user.eh_admin %}
+<div class="card mt-4 border-0 shadow-sm">
+  <div class="card-body">
+    <strong class="small text-uppercase text-muted d-block mb-2">Ver como fica em outro dia</strong>
+    <p class="small text-muted">Use para conferir, por exemplo, como o estoque aparece numa sexta-feira ou na véspera de um feriado.</p>
+    <form method="post" action="{{ url_for('painel.dia_de_teste') }}" class="d-flex gap-2">
+      <input type="date" name="data" class="form-control" value="{{ data_referencia }}">
+      <button class="btn btn-outline-secondary">Ver</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

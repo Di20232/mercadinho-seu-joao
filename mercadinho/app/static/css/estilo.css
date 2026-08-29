@@ -1,0 +1,252 @@
+/* Mercadinho do Seu Joao - visual pensado para celular e para quem tem
+   pouca intimidade com computador: fonte grande, botao grande, cor clara. */
+
+:root {
+  --verde: #1b7f4b;
+  --verde-escuro: #14653b;
+  --fundo: #f4f6f5;
+  --altura-menu: 4.4rem;
+}
+
+body {
+  background: var(--fundo);
+  font-size: 1.02rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ---------- topo ---------- */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  background: var(--verde);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.marca {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+.btn-topo {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .35);
+}
+
+.btn-topo:hover,
+.btn-topo:focus {
+  color: var(--verde);
+  background: #fff;
+}
+
+.faixa-demo {
+  background: #b45309;
+  color: #fff;
+  font-size: .85rem;
+  padding: .35rem .75rem;
+  text-align: center;
+}
+
+.faixa-demo .btn-link {
+  text-decoration: underline;
+}
+
+/* ---------- conteudo ---------- */
+.conteudo {
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: 1.5rem;
+}
+
+.conteudo.com-menu {
+  padding-bottom: calc(var(--altura-menu) + 1.5rem);
+}
+
+.btn-verde {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
+}
+
+.btn-verde:hover,
+.btn-verde:focus {
+  background: var(--verde-escuro);
+  border-color: var(--verde-escuro);
+  color: #fff;
+}
+
+/* ---------- login ---------- */
+.tela-login {
+  max-width: 26rem;
+  margin: 3rem auto;
+}
+
+.logo-grande {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+/* ---------- semaforo ---------- */
+.cartao-semaforo {
+  display: block;
+  text-align: center;
+  border: 2px solid;
+  border-radius: .9rem;
+  padding: .6rem .3rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cartao-semaforo .numero {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.cartao-semaforo .rotulo {
+  font-size: .8rem;
+  color: #444;
+}
+
+.aviso-pico {
+  background: #fff4e5;
+  border: 1px solid #f0b775;
+  border-radius: .8rem;
+  padding: .7rem .9rem;
+  font-size: .92rem;
+}
+
+/* ---------- lista de estoque ---------- */
+.item-estoque {
+  background: #fff;
+  border-radius: .8rem;
+  border-left: 6px solid #dee2e6;
+  padding: .75rem .9rem;
+  margin-bottom: .6rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.borda-danger { border-left-color: #dc3545 !important; }
+.borda-warning { border-left-color: #ffc107 !important; }
+.borda-success { border-left-color: #198754 !important; }
+.card.borda-danger, .card.borda-warning, .card.borda-success { border-left: 6px solid; }
+.list-group-item.borda-danger, .list-group-item.borda-warning { border-left: 6px solid; }
+
+.bolinha {
+  display: inline-block;
+  width: .85rem;
+  height: .85rem;
+  border-radius: 50%;
+  margin-top: .35rem;
+  flex: 0 0 auto;
+}
+
+.bolinha.grande {
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: 0;
+}
+
+.nome-produto {
+  font-weight: 600;
+  color: #212529;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+
+.quantidade {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.frase-alerta {
+  font-size: .88rem;
+  margin-top: .2rem;
+}
+
+/* ---------- seletor de produto ---------- */
+.lista-escolha {
+  max-height: 17rem;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: .6rem;
+  background: #fff;
+}
+
+.opcao-produto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+  padding: .7rem .9rem;
+  text-align: left;
+}
+
+.opcao-produto:last-child { border-bottom: 0; }
+.opcao-produto:hover,
+.opcao-produto:focus { background: #eef7f1; }
+
+.produto-escolhido {
+  background: #eef7f1;
+  border: 1px solid var(--verde);
+  border-radius: .7rem;
+  padding: .75rem .9rem;
+}
+
+.bloco-destaque {
+  background: #f8f9fa;
+  border: 1px dashed #adb5bd;
+  border-radius: .7rem;
+  padding: .9rem;
+}
+
+/* ---------- menu de baixo (celular) ---------- */
+.menu-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;
+  display: flex;
+  justify-content: space-around;
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, .07);
+}
+
+.menu-inferior a {
+  flex: 1;
+  padding: .45rem .1rem .5rem;
+  text-align: center;
+  color: #6c757d;
+  text-decoration: none;
+  font-size: .68rem;
+  line-height: 1.1;
+}
+
+.menu-inferior a i {
+  display: block;
+  font-size: 1.35rem;
+  margin-bottom: .1rem;
+}
+
+.menu-inferior a.ativo {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+/* ---------- toque confortavel ---------- */
+.btn-lg, .form-control-lg, .form-select-lg { min-height: 3rem; }
+.btn { min-height: 2.5rem; }
+
+@media (min-width: 992px) {
+  body { font-size: 1rem; }
+}

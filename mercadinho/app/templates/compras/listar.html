@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Lista de compras — Mercadinho{% endblock %}
+{% block conteudo %}
+<div class="d-flex align-items-center justify-content-between mt-3 mb-1">
+  <h1 class="h5 mb-0">O que comprar</h1>
+  {% if current_user.pode('gerar_lista_compras') %}
+  <form method="post" action="{{ url_for('compras.gerar') }}">
+    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
+  </form>
+  {% endif %}
+</div>
+<p class="text-muted small">Lista de {{ dia | data }} ({{ dia | dia_semana }}). O sistema já calculou a quantidade.</p>
+
+<div class="list-group shadow-sm">
+{% for item in lista %}
+  <div class="list-group-item {{ 'opacity-50' if item.comprado }}">
+    <div class="d-flex align-items-center gap-3">
+      <form method="post" action="{{ url_for('compras.marcar_comprado', item_id=item.id) }}">
+        <button class="btn btn-lg p-0 border-0 bg-transparent" title="Marcar como comprado">
+          <i class="bi {{ 'bi-check-square-fill text-success' if item.comprado else 'bi-square' }} fs-3"></i>
+        </button>
+      </form>
+      <div class="flex-grow-1">
+        <div class="fw-semibold">
+          {{ item.produto.nome }}
+          <span class="badge text-bg-success">{{ item.quantidade_sugerida | qtd }} {{ item.produto.unidade_medida }}</span>
+        </div>
+        <div class="small text-muted">{{ item.justificativa }}</div>
+        {% if item.produto.responsavel_padrao %}
+        <div class="small text-muted"><i class="bi bi-person"></i> {{ item.produto.responsavel_padrao.nome }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="list-group-item text-center text-muted py-4">
+    <i class="bi bi-cart-check display-6 d-block mb-2"></i>
+    Não precisa comprar nada hoje.
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

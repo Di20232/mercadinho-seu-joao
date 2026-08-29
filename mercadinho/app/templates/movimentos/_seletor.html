@@ -1,0 +1,32 @@
+{# Seletor de produto: digita parte do nome e toca no produto. Sem codigo de barras. #}
+<div class="seletor-produto mb-3" data-seletor>
+  <input type="hidden" name="produto_id" data-produto-id required>
+
+  <div data-passo-busca>
+    <label class="form-label" for="busca-produto-{{ id_sufixo }}">1. Qual produto?</label>
+    <input class="form-control form-control-lg" id="busca-produto-{{ id_sufixo }}"
+           placeholder="Digite parte do nome..." autocomplete="off" data-busca-produto>
+    <div class="lista-escolha mt-2" data-lista-produtos>
+      {% for p in produtos %}
+      <button type="button" class="opcao-produto" data-id="{{ p.id }}" data-nome="{{ p.nome }}"
+              data-unidade="{{ p.unidade_medida }}" data-perecivel="{{ 'sim' if p.eh_perecivel else 'nao' }}"
+              data-estoque="{{ (saldos.get(p.id, 0) if saldos is defined else 0) | qtd }}"
+              data-filtro="{{ p.nome | lower }} {{ p.setor | lower }}">
+        <span class="fw-semibold">{{ p.nome }}</span>
+        <span class="small text-muted">{{ p.setor }}{% if saldos is defined %} · tem {{ saldos.get(p.id, 0) | qtd }} {{ p.unidade_medida }}{% endif %}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="produto-escolhido d-none" data-produto-escolhido>
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <div class="small text-muted">Produto</div>
+        <div class="fs-5 fw-semibold" data-nome-escolhido></div>
+        <div class="small text-muted" data-estoque-escolhido></div>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-trocar-produto>Trocar</button>
+    </div>
+  </div>
+</div>

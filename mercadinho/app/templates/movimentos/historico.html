@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Histórico — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-3">Histórico de movimentações</h1>
+
+<div class="btn-group w-100 mb-3">
+  <a class="btn btn-outline-secondary {{ 'active' if not tipo }}" href="{{ url_for('movimentos.historico') }}">Tudo</a>
+  <a class="btn btn-outline-secondary {{ 'active' if tipo == 'entrada' }}" href="{{ url_for('movimentos.historico', tipo='entrada') }}">Chegou</a>
+  <a class="btn btn-outline-secondary {{ 'active' if tipo == 'saida' }}" href="{{ url_for('movimentos.historico', tipo='saida') }}">Saiu</a>
+  <a class="btn btn-outline-secondary {{ 'active' if tipo == 'perda' }}" href="{{ url_for('movimentos.historico', tipo='perda') }}">Perdas</a>
+</div>
+
+<div class="list-group shadow-sm">
+{% for m in movimentos %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <div>
+      <span class="badge {{ {'entrada':'text-bg-success','saida':'text-bg-secondary','perda':'text-bg-danger'}[m.tipo.value] }}">{{ m.tipo.rotulo }}</span>
+      <a href="{{ url_for('produtos.detalhe', produto_id=m.produto_id) }}">{{ m.produto.nome }}</a>
+      {% if m.motivo %}<span class="small text-muted">— {{ m.motivo.rotulo }}</span>{% endif %}
+      <div class="small text-muted">{{ m.data_hora | data_hora }} · {{ m.usuario.nome }}{% if m.observacao %} · {{ m.observacao }}{% endif %}</div>
+    </div>
+    <span class="text-nowrap">{{ m.quantidade | qtd }} {{ m.produto.unidade_medida }}</span>
+  </div>
+{% else %}
+  <div class="list-group-item text-muted">Nada registrado ainda.</div>
+{% endfor %}
+</div>
+{% endblock %}

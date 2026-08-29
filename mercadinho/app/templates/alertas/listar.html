@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Avisos — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-1">{% if current_user.eh_admin %}Avisos da loja{% else %}Seus avisos{% endif %}</h1>
+<p class="text-muted small">
+  {% if current_user.eh_admin %}
+    Como dono, você vê todos os avisos. Cada um vai para quem cuida do produto.
+  {% else %}
+    Só aparecem aqui os produtos que são da sua responsabilidade.
+  {% endif %}
+  {% if not telegram_ligado %}<br><i class="bi bi-info-circle"></i> Telegram não configurado — os avisos ficam só aqui no sistema.{% endif %}
+</p>
+
+<div class="list-group shadow-sm mb-4">
+{% for alerta in pendentes %}
+  <div class="list-group-item borda-{{ 'danger' if alerta.tipo.value == 'limite_minimo' else 'warning' }}">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <div class="fw-semibold">{{ alerta.mensagem }}</div>
+        <div class="small text-muted">
+          {{ alerta.produto.setor }} · {{ alerta.data_criacao | data_hora }}
+          {% if current_user.eh_admin %} · para {{ alerta.destinatario.nome }}{% endif %}
+          {% if alerta.enviado_telegram %} · <i class="bi bi-telegram"></i> enviado{% endif %}
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('alertas.resolver', alerta_id=alerta.id) }}">
+        <button class="btn btn-sm btn-outline-success" title="Já resolvi">
+          <i class="bi bi-check-lg"></i> Resolvi
+        </button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <div class="list-group-item text-center text-muted py-4">
+    <i class="bi bi-emoji-smile display-6 d-block mb-2"></i>
+    Nenhum aviso pendente. Tudo em ordem.
+  </div>
+{% endfor %}
+</div>
+
+{% if resolvidos %}
+<h2 class="h6 text-muted">Já resolvidos</h2>
+<div class="list-group shadow-sm">
+{% for alerta in resolvidos %}
+  <div class="list-group-item small text-muted d-flex justify-content-between">
+    <span>{{ alerta.mensagem }}</span>
+    <span>{{ alerta.resolvido_em | data_hora }}</span>
+  </div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

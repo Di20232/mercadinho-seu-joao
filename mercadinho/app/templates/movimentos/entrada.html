@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titulo %}Chegou mercadoria — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-1">Chegou mercadoria</h1>
+<p class="text-muted small">Registre o que entrou na loja.</p>
+
+<form method="post" class="card card-body shadow-sm border-0">
+  {% with id_sufixo = 'entrada' %}{% include "movimentos/_seletor.html" %}{% endwith %}
+
+  <label class="form-label" for="quantidade">2. Quanto chegou?</label>
+  <div class="input-group input-group-lg mb-3">
+    <button class="btn btn-outline-secondary" type="button" data-passo="-1">−</button>
+    <input class="form-control text-center" id="quantidade" name="quantidade" inputmode="decimal"
+           value="1" data-campo-quantidade required>
+    <button class="btn btn-outline-secondary" type="button" data-passo="1">+</button>
+    <span class="input-group-text" data-unidade>un</span>
+  </div>
+
+  <div class="mb-3 d-none" data-so-perecivel>
+    <label class="form-label" for="data_validade">3. Até quando vale? (validade)</label>
+    <input type="date" class="form-control form-control-lg" id="data_validade" name="data_validade"
+           min="{{ hoje }}">
+    <div class="form-text">Só para produto que estraga. O sistema avisa antes de vencer.</div>
+  </div>
+
+  <label class="form-label" for="origem_compra">Comprou de quem? <span class="text-muted">(opcional)</span></label>
+  <input class="form-control mb-3" id="origem_compra" name="origem_compra" placeholder="Ex.: Atacadão, feira">
+
+  <label class="form-label" for="custo_unitario">Quanto pagou por unidade? <span class="text-muted">(opcional)</span></label>
+  <input class="form-control mb-3" id="custo_unitario" name="custo_unitario" inputmode="decimal" placeholder="R$">
+
+  <button class="btn btn-verde btn-lg">Confirmar entrada</button>
+</form>
+{% endblock %}

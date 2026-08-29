@@ -1,0 +1,36 @@
+# Sobe o sistema e o PostgreSQL juntos, para desenvolvimento e demonstracao.
+#   docker compose up -d --build
+#   docker compose exec app flask criar-tabelas
+#   docker compose exec app python dados_demo.py
+# Acesse http://localhost:8000
+services:
+  banco:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mercadinho
+      POSTGRES_PASSWORD: mercadinho
+      POSTGRES_DB: mercadinho
+    volumes:
+      - dados_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mercadinho"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      banco:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-troque-esta-chave-em-producao}
+      DATABASE_URL: postgresql+psycopg2://mercadinho:mercadinho@banco:5432/mercadinho
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      DIAS_AVISO_VALIDADE: ${DIAS_AVISO_VALIDADE:-3}
+      FLASK_APP: wsgi.py
+    ports:
+      - "8000:8000"
+
+volumes:
+  dados_postgres:

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Perda — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-1">Registrar perda</h1>
+<p class="text-muted small">Venceu, estragou ou quebrou? Registre para o relatório do mês.</p>
+
+<form method="post" class="card card-body shadow-sm border-0">
+  {% with id_sufixo = 'perda' %}{% include "movimentos/_seletor.html" %}{% endwith %}
+
+  <label class="form-label" for="quantidade">2. Quanto perdeu?</label>
+  <div class="input-group input-group-lg mb-3">
+    <button class="btn btn-outline-secondary" type="button" data-passo="-1">−</button>
+    <input class="form-control text-center" id="quantidade" name="quantidade" inputmode="decimal"
+           value="1" data-campo-quantidade required>
+    <button class="btn btn-outline-secondary" type="button" data-passo="1">+</button>
+    <span class="input-group-text" data-unidade>un</span>
+  </div>
+
+  <label class="form-label">3. O que aconteceu?</label>
+  <div class="d-grid gap-2 mb-3">
+    {% for m in motivos %}
+    <input type="radio" class="btn-check" name="motivo" id="motivo-{{ m.value }}" value="{{ m.value }}"
+           {{ 'checked' if loop.first }} required>
+    <label class="btn btn-outline-danger btn-lg text-start" for="motivo-{{ m.value }}">{{ m.rotulo }}</label>
+    {% endfor %}
+  </div>
+
+  <label class="form-label" for="observacao">Observação <span class="text-muted">(opcional)</span></label>
+  <input class="form-control mb-3" id="observacao" name="observacao">
+
+  <button class="btn btn-danger btn-lg">Registrar perda</button>
+</form>
+{% endblock %}

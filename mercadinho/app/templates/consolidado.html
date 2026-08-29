@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block titulo %}Painel completo — Mercadinho{% endblock %}
+{% block conteudo %}
+
+<div class="d-flex align-items-baseline justify-content-between mt-3 mb-3">
+  <h1 class="h5 mb-0">Painel completo</h1>
+  <span class="text-muted small">{{ dia | data }} · {{ dia | dia_semana }}</span>
+</div>
+
+{% if dia_de_pico %}
+<div class="aviso-pico mb-3">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Hoje é <strong>{{ motivo_limite }}</strong> — limites reforçados em vigor.
+</div>
+{% endif %}
+
+<div class="row g-3">
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white"><i class="bi bi-cart-x text-danger me-1"></i> <strong>O que está acabando</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for item in criticos %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{{ url_for('produtos.detalhe', produto_id=item.produto.id) }}">{{ item.produto.nome }}</a>
+            <div class="small text-muted">{{ item.frase }}</div>
+          </div>
+          <span class="badge text-bg-danger">{{ item.estoque | qtd }} {{ item.produto.unidade_medida }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Nada faltando agora.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white"><i class="bi bi-calendar-x text-warning me-1"></i> <strong>O que vai vencer</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for item in vencendo %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{{ url_for('produtos.detalhe', produto_id=item.produto.id) }}">{{ item.produto.nome }}</a>
+            <div class="small text-muted">{{ regras.frase_validade(item.produto, item.dias_para_vencer) }}</div>
+          </div>
+          <span class="badge text-bg-warning">{{ item.lote_critico.data_validade | data }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Nada vencendo nos próximos dias.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white"><i class="bi bi-hourglass-split text-warning me-1"></i> <strong>Parado no balcão</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for item in parados %}
+        <li class="list-group-item">
+          <a href="{{ url_for('produtos.detalhe', produto_id=item.produto.id) }}">{{ item.produto.nome }}</a>
+          <div class="small text-muted">Sem sair há {{ item.dias_parado }} dia{{ 's' if item.dias_parado != 1 }} — risco de perder</div>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Nenhum perecível parado.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cart-check text-success me-1"></i> <strong>O que precisa comprar</strong></span>
+        <a class="small" href="{{ url_for('compras.listar') }}">abrir lista</a>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for item in lista %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            {{ item.produto.nome }}
+            <div class="small text-muted">{{ item.justificativa }}</div>
+          </div>
+          <span class="badge text-bg-success">{{ item.quantidade_sugerida | qtd }} {{ item.produto.unidade_medida }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Nada para comprar hoje.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white"><i class="bi bi-person-check text-primary me-1"></i> <strong>Quem vai receber o aviso</strong></div>
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead class="table-light">
+            <tr><th>Produto</th><th>Aviso</th><th>Vai para</th><th class="text-center">Telegram</th></tr>
+          </thead>
+          <tbody>
+          {% for alerta in alertas %}
+            <tr>
+              <td>{{ alerta.produto.nome }}<div class="small text-muted">{{ alerta.produto.setor }}</div></td>
+              <td class="small">{{ alerta.mensagem }}</td>
+              <td>{{ alerta.destinatario.nome }}<div class="small text-muted">{{ alerta.destinatario.papel.rotulo }}</div></td>
+              <td class="text-center">
+                {% if alerta.enviado_telegram %}<i class="bi bi-check-circle-fill text-success" title="Enviado"></i>
+                {% elif telegram_ligado %}<i class="bi bi-dash-circle text-muted" title="Sem contato cadastrado"></i>
+                {% else %}<span class="small text-muted">só no sistema</span>{% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-muted">Nenhum aviso pendente.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

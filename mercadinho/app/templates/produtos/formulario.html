@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar produto' if produto else 'Novo produto' }} — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-3">{{ 'Editar ' + produto.nome if produto else 'Cadastrar produto' }}</h1>
+
+<form method="post" class="card card-body shadow-sm border-0">
+  <label class="form-label" for="nome">Nome do produto</label>
+  <input class="form-control form-control-lg mb-3" id="nome" name="nome" required
+         value="{{ produto.nome if produto else '' }}" placeholder="Ex.: Contrafilé">
+
+  <label class="form-label" for="categoria">Esse produto estraga?</label>
+  <select class="form-select form-select-lg mb-3" id="categoria" name="categoria">
+    <option value="perecivel" {{ 'selected' if produto and produto.categoria.value == 'perecivel' }}>Sim — tem validade (carne, frios, leite)</option>
+    <option value="nao_perecivel" {{ 'selected' if not produto or produto.categoria.value == 'nao_perecivel' }}>Não — não tem validade curta</option>
+  </select>
+
+  <div class="row g-3 mb-3">
+    <div class="col-7">
+      <label class="form-label" for="setor">Setor da loja</label>
+      <select class="form-select" id="setor" name="setor">
+        {% for s in setores %}
+        <option value="{{ s }}" {{ 'selected' if produto and produto.setor == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-5">
+      <label class="form-label" for="unidade_medida">Vendido em</label>
+      <select class="form-select" id="unidade_medida" name="unidade_medida">
+        {% for u in unidades %}
+        <option value="{{ u }}" {{ 'selected' if produto and produto.unidade_medida == u }}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="bloco-destaque mb-3">
+    <label class="form-label fw-semibold" for="limite_minimo">Avisar quando ficar abaixo de</label>
+    <div class="input-group input-group-lg mb-2">
+      <input class="form-control" id="limite_minimo" name="limite_minimo" inputmode="decimal"
+             value="{{ produto.limite_minimo | qtd if produto else '' }}" placeholder="Ex.: 3">
+      <span class="input-group-text">{{ produto.unidade_medida if produto else 'un' }}</span>
+    </div>
+    <label class="form-label" for="limite_minimo_fim_de_semana">
+      Na sexta, fim de semana e véspera de feriado, avisar abaixo de
+    </label>
+    <div class="input-group mb-1">
+      <input class="form-control" id="limite_minimo_fim_de_semana" name="limite_minimo_fim_de_semana"
+             inputmode="decimal" placeholder="deixe vazio para usar o mesmo número"
+             value="{{ produto.limite_minimo_fim_de_semana | qtd if produto and produto.limite_minimo_fim_de_semana is not none else '' }}">
+    </div>
+    <div class="form-text">Serve para o que vende mais no fim de semana: carne, cerveja, carvão.</div>
+  </div>
+
+  <label class="form-label" for="responsavel_padrao_id">Quem cuida de repor esse produto</label>
+  <select class="form-select form-select-lg mb-1" id="responsavel_padrao_id" name="responsavel_padrao_id">
+    <option value="">Ninguém definido (o aviso vai para o dono)</option>
+    {% for u in responsaveis %}
+    <option value="{{ u.id }}" {{ 'selected' if produto and produto.responsavel_padrao_id == u.id }}>
+      {{ u.nome }} — {{ u.papel.rotulo }}
+    </option>
+    {% endfor %}
+  </select>
+  <div class="form-text mb-3">Só essa pessoa recebe o aviso de reposição deste produto.</div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6">
+      <label class="form-label" for="preco_custo">Preço de custo (R$)</label>
+      <input class="form-control" id="preco_custo" name="preco_custo" inputmode="decimal"
+             value="{{ produto.preco_custo if produto and produto.preco_custo is not none else '' }}">
+      <div class="form-text">Usado para calcular o prejuízo das perdas.</div>
+    </div>
+    <div class="col-6">
+      <label class="form-label" for="preco_venda">Preço de venda (R$)</label>
+      <input class="form-control" id="preco_venda" name="preco_venda" inputmode="decimal"
+             value="{{ produto.preco_venda if produto and produto.preco_venda is not none else '' }}">
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6">
+      <label class="form-label" for="dias_aviso_validade">Avisar da validade com quantos dias</label>
+      <input class="form-control" id="dias_aviso_validade" name="dias_aviso_validade" inputmode="numeric"
+             placeholder="padrão: {{ config.DIAS_AVISO_VALIDADE }}"
+             value="{{ produto.dias_aviso_validade if produto and produto.dias_aviso_validade else '' }}">
+    </div>
+    <div class="col-6">
+      <label class="form-label" for="ativo">Está sendo vendido?</label>
+      <select class="form-select" id="ativo" name="ativo">
+        <option value="sim" {{ 'selected' if not produto or produto.ativo }}>Sim</option>
+        <option value="nao" {{ 'selected' if produto and not produto.ativo }}>Não (parar de mostrar)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="d-grid gap-2">
+    <button class="btn btn-verde btn-lg">Salvar</button>
+    <a class="btn btn-link" href="{{ url_for('produtos.listar') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

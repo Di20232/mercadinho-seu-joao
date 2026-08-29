@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar pessoa' if usuario else 'Nova pessoa' }} — Mercadinho{% endblock %}
+{% block conteudo %}
+<h1 class="h5 mt-3 mb-3">{{ 'Editar ' + usuario.nome if usuario else 'Nova pessoa' }}</h1>
+
+<form method="post" class="card card-body shadow-sm border-0">
+  <label class="form-label" for="nome">Nome</label>
+  <input class="form-control form-control-lg mb-3" id="nome" name="nome" required
+         value="{{ usuario.nome if usuario else '' }}">
+
+  <label class="form-label" for="login">Usuário para entrar</label>
+  <input class="form-control form-control-lg mb-3" id="login" name="login" required
+         autocapitalize="none" value="{{ usuario.login if usuario else '' }}">
+
+  <label class="form-label" for="senha">Senha {% if usuario %}<span class="text-muted">(deixe vazio para não trocar)</span>{% endif %}</label>
+  <input class="form-control form-control-lg mb-3" id="senha" name="senha" type="password"
+         autocomplete="new-password" {{ 'required' if not usuario }}>
+
+  <label class="form-label" for="papel">O que essa pessoa faz</label>
+  <select class="form-select form-select-lg mb-1" id="papel" name="papel">
+    {% for p in papeis %}
+    <option value="{{ p.value }}" {{ 'selected' if usuario and usuario.papel == p }}>{{ p.rotulo }}</option>
+    {% endfor %}
+  </select>
+  <div class="form-text mb-3">
+    <strong>Dono</strong>: cadastra tudo e vê todos os avisos ·
+    <strong>Operador</strong>: lança entradas e cuida do dia a dia ·
+    <strong>Repositor</strong>: dá baixa e recebe os avisos dos produtos que cuida.
+  </div>
+
+  <label class="form-label" for="contato_telegram">Telegram (chat id) <span class="text-muted">(opcional)</span></label>
+  <input class="form-control mb-1" id="contato_telegram" name="contato_telegram"
+         value="{{ usuario.contato_telegram or '' if usuario else '' }}">
+  <div class="form-text mb-3">Sem isso, os avisos aparecem só dentro do sistema.</div>
+
+  <label class="form-label" for="ativo">Ainda trabalha aqui?</label>
+  <select class="form-select mb-3" id="ativo" name="ativo">
+    <option value="sim" {{ 'selected' if not usuario or usuario.ativo }}>Sim</option>
+    <option value="nao" {{ 'selected' if usuario and not usuario.ativo }}>Não (bloquear acesso)</option>
+  </select>
+
+  <div class="d-grid gap-2">
+    <button class="btn btn-verde btn-lg">Salvar</button>
+    <a class="btn btn-link" href="{{ url_for('usuarios.listar') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
