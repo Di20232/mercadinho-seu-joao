@@ -20,6 +20,46 @@ Sistema web de controle de vendas e estoque para pequeno comerciante (mercadinho
 - **Alerta diário por e-mail** (opcional): resumo de estoque baixo, previsão de falta e validades próximas, enviado automaticamente uma vez por dia se o SMTP for configurado.
 - **Perfis de usuário**: **administrador** (dono, acesso total) e **caixa** (funcionário, só registra vendas e vê estoque — não vê preço de custo/margem nem dados financeiros).
 
+## Commit automático no GitHub
+
+O repositório traz um script que faz **commit e push automáticos** das alterações:
+[scripts/auto-commit.sh](scripts/auto-commit.sh). Ele é ligado como hook `Stop` do
+Claude Code — toda vez que o Claude termina uma resposta, o que ele mexeu vai para
+o GitHub sozinho.
+
+Para ativar na sua máquina, crie `.claude/settings.json` na raiz do projeto com:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/auto-commit.sh\" 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Salvando alterações no GitHub..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+> `.claude/` está no `.gitignore`, então esse arquivo fica só na sua máquina —
+> por isso ele não vem pronto no clone. Depois de criá-lo, abra `/hooks` uma vez
+> (ou reinicie o Claude Code) para que a configuração seja carregada.
+
+O script tem duas travas de segurança:
+
+- **Nunca commita em `master`/`main`** — só em branches de trabalho.
+- **Não cria commit vazio** — se nada mudou, ele sai sem fazer nada.
+
+Rodando à mão: `scripts/auto-commit.sh`. Para desligar o automático, apague o bloco
+`hooks` do `.claude/settings.json` ou use `/hooks` no Claude Code.
+
 ## Arquitetura
 
 - **Backend**: Node.js + Express + PostgreSQL (via [Prisma ORM](https://www.prisma.io/)).
