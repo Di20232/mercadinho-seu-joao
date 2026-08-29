@@ -19,7 +19,7 @@ git add -A
 git diff --cached --quiet && exit 0  # nada mudou, nada a fazer
 
 TOTAL=$(git diff --cached --name-only | wc -l | tr -d ' ')
-RESUMO=$(git diff --cached --name-only | head -3 | paste -sd ', ' -)
+RESUMO=$(git diff --cached --name-only | head -3 | paste -sd ',' - | sed 's/,/, /g')
 [ "$TOTAL" -gt 3 ] && RESUMO="$RESUMO e mais $((TOTAL - 3)) arquivo(s)"
 
 git commit -q -m "Atualiza $RESUMO" \
