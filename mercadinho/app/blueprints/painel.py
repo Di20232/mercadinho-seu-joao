@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 
 from .. import data_referencia
 from ..models import Produto, StatusAlerta
+from ..seguranca import somente_admin
 from ..servicos import alertas as servico_alertas
 from ..servicos import compras as servico_compras
 from ..servicos import estoque as servico_estoque
@@ -22,8 +23,11 @@ def inicio():
     setor = request.args.get("setor") or None
     filtro = request.args.get("ver") or "todos"
 
-    # Mantem os alertas em dia sempre que alguem abre o painel
-    servico_alertas.verificar_tudo(dia)
+    # Mantem os alertas em dia sempre que alguem abre o painel. Usa sempre o
+    # dia real (nao o "dia de teste"), senao um dono so' olhando como fica
+    # numa sexta-feira acabaria abrindo/fechando avisos e mandando Telegram
+    # de verdade com base num dia fictício.
+    servico_alertas.verificar_tudo()
 
     itens = servico_estoque.visao_geral(dia, setor=setor)
     resumo = servico_estoque.resumo_semaforo(itens)
@@ -47,7 +51,7 @@ def inicio():
 def consolidado():
     """Painel do Modulo 4: tudo numa tela so, para a demonstracao."""
     dia = data_referencia()
-    servico_alertas.verificar_tudo(dia)
+    servico_alertas.verificar_tudo()  # sempre com o dia real, ver comentário acima
 
     itens = servico_estoque.visao_geral(dia)
     criticos = [i for i in itens if i["status_estoque"] == regras.CRITICO]
@@ -67,6 +71,7 @@ def consolidado():
 
 @bp.route("/dia-de-teste", methods=["POST"])
 @login_required
+@somente_admin
 def dia_de_teste():
     """Permite olhar o sistema como se fosse outro dia (demonstracao)."""
     valor = (request.form.get("data") or "").strip()

@@ -98,9 +98,14 @@ def gerar_lista(dia=None, setor=None):
             linha.justificativa = sugestao["justificativa"]
         sugeridos.append(linha)
 
-    # Tira da lista o que resolveu sozinho (chegou mercadoria no meio do caminho)
+    # Tira da lista o que resolveu sozinho (chegou mercadoria no meio do caminho).
+    # Restrito ao mesmo setor filtrado acima - senao gerar a lista de um so'
+    # setor apagava as sugestoes pendentes de todos os outros setores do dia.
     ids = {linha.produto_id for linha in sugeridos}
-    for antiga in ListaCompraSugerida.query.filter_by(data_geracao=dia, comprado=False).all():
+    antigas = ListaCompraSugerida.query.filter_by(data_geracao=dia, comprado=False)
+    if setor:
+        antigas = antigas.join(Produto).filter(Produto.setor == setor)
+    for antiga in antigas.all():
         if antiga.produto_id not in ids:
             db.session.delete(antiga)
 

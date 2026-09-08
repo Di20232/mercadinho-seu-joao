@@ -10,7 +10,6 @@ from flask import (Blueprint, flash, redirect, render_template, request,
                    url_for)
 from flask_login import current_user, login_required
 
-from .. import data_referencia
 from ..extensions import db
 from ..models import (Categoria, LoteEstoque, MotivoPerda, Produto,
                       TipoMovimento)
@@ -35,7 +34,9 @@ def _produtos_ativos():
 
 def _depois_do_movimento(produto):
     db.session.commit()
-    servico_alertas.avaliar_produto(produto, data_referencia())
+    # Sempre no dia real: um movimento de estoque de verdade nao pode abrir
+    # ou fechar avisos com base no "dia de teste" que o dono esteja olhando.
+    servico_alertas.avaliar_produto(produto)
     db.session.commit()
 
 
@@ -129,8 +130,11 @@ def perda():
 
         lote = None
         lote_id = request.form.get("lote_id")
-        if lote_id:
+        if lote_id and lote_id.isdigit():
             lote = db.session.get(LoteEstoque, int(lote_id))
+            if lote and lote.produto_id != produto.id:
+                flash("Esse lote não é desse produto.", "erro")
+                return redirect(url_for("movimentos.perda"))
         try:
             servico_estoque.registrar_perda(
                 produto, quantidade, current_user, MotivoPerda(motivo_valor), lote=lote,

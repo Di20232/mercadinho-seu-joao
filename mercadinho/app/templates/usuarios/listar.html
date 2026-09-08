@@ -29,6 +29,7 @@
 <p class="text-muted small">Na véspera e no dia dessas datas o sistema usa o limite mínimo reforçado.</p>
 
 <form method="post" action="{{ url_for('usuarios.novo_feriado') }}" class="row g-2 mb-3">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-5"><input type="date" name="data" class="form-control" required></div>
   <div class="col-5"><input name="descricao" class="form-control" placeholder="Ex.: Natal" required></div>
   <div class="col-2 d-grid"><button class="btn btn-outline-secondary"><i class="bi bi-plus-lg"></i></button></div>
@@ -39,6 +40,7 @@
   <div class="list-group-item d-flex justify-content-between align-items-center">
     <span>{{ f.data | data }} — {{ f.descricao }}</span>
     <form method="post" action="{{ url_for('usuarios.apagar_feriado', feriado_id=f.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
     </form>
   </div>

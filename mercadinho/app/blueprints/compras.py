@@ -32,6 +32,7 @@ def gerar():
 
 @bp.route("/<int:item_id>/comprado", methods=["POST"])
 @login_required
+@exige("ver_painel")
 def marcar_comprado(item_id):
     item = db.get_or_404(ListaCompraSugerida, item_id)
     item.comprado = not item.comprado

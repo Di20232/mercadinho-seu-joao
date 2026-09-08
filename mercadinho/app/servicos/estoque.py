@@ -166,7 +166,9 @@ def consumo_medio_diario(produto, dias=None, ate=None):
     from flask import current_app
     dias = dias or current_app.config.get("DIAS_MEDIA_CONSUMO", 14)
     ate = ate or date.today()
-    inicio = datetime.combine(ate - timedelta(days=dias), datetime.min.time())
+    # De ate-(dias-1) ate ate, inclusive dos dois lados: exatamente "dias"
+    # dias no total, para bater com a divisao por "dias" logo abaixo.
+    inicio = datetime.combine(ate - timedelta(days=dias - 1), datetime.min.time())
     fim = datetime.combine(ate, datetime.max.time())
     total = db.session.query(func.coalesce(func.sum(MovimentoEstoque.quantidade), 0)).filter(
         MovimentoEstoque.produto_id == produto.id,
@@ -184,17 +186,22 @@ def ultima_saida(produto):
 
 
 def dias_parado(produto, dia=None):
-    """Ha quantos dias esse produto nao tem saida (None se nunca teve estoque)."""
+    """Ha quantos dias o estoque atual esta' parado (None se nao ha' estoque).
+
+    Conta a partir do que for mais recente entre a ultima venda e a chegada
+    do lote mais novo que ainda tem saldo - senao um produto que acabou de
+    ser reposto herdava os dias parados da venda antiga do lote anterior e
+    disparava aviso de risco de perda na hora que a mercadoria chegava.
+    """
     dia = dia or date.today()
-    ultima = ultima_saida(produto)
-    if ultima:
-        return max((dia - ultima.date()).days, 0)
-    entrada_mais_antiga = db.session.query(func.min(LoteEstoque.data_entrada)).filter(
+    ultima_entrada_com_saldo = db.session.query(func.max(LoteEstoque.data_entrada)).filter(
         LoteEstoque.produto_id == produto.id, LoteEstoque.quantidade > 0
     ).scalar()
-    if not entrada_mais_antiga:
+    if not ultima_entrada_com_saldo:
         return None
-    return max((dia - entrada_mais_antiga).days, 0)
+    ultima = ultima_saida(produto)
+    referencia = max(ultima.date(), ultima_entrada_com_saldo) if ultima else ultima_entrada_com_saldo
+    return max((dia - referencia).days, 0)
 
 
 def situacao_produto(produto, dia=None, feriados=None, saldo=None):

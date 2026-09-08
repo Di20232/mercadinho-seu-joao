@@ -5,6 +5,7 @@
 <p class="text-muted small">Venceu, estragou ou quebrou? Registre para o relatório do mês.</p>
 
 <form method="post" class="card card-body shadow-sm border-0">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% with id_sufixo = 'perda' %}{% include "movimentos/_seletor.html" %}{% endwith %}
 
   <label class="form-label" for="quantidade">2. Quanto perdeu?</label>

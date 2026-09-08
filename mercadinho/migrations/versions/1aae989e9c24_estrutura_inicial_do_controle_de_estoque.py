@@ -7,6 +7,14 @@ Create Date: 2026-08-29 03:08:23.445008
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+# Tipos ENUM do Postgres criados junto com as tabelas (ver upgrade()). O
+# Alembic nao remove ENUMs sozinho no downgrade, entao isso e' feito na mao
+# no fim de downgrade() - senao um downgrade seguido de upgrade falha com
+# "type ... already exists".
+_ENUMS = ['papel_usuario', 'categoria_produto', 'tipo_alerta', 'status_alerta',
+          'tipo_movimento', 'motivo_perda']
 
 
 # revision identifiers, used by Alembic.
@@ -185,3 +193,6 @@ def downgrade():
 
     op.drop_table('dia_especial')
     # ### end Alembic commands ###
+
+    for nome in _ENUMS:
+        postgresql.ENUM(name=nome).drop(op.get_bind(), checkfirst=True)

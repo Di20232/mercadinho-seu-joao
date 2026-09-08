@@ -5,6 +5,7 @@
   <h1 class="h5 mb-0">O que comprar</h1>
   {% if current_user.pode('gerar_lista_compras') %}
   <form method="post" action="{{ url_for('compras.gerar') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
   </form>
   {% endif %}
@@ -16,6 +17,7 @@
   <div class="list-group-item {{ 'opacity-50' if item.comprado }}">
     <div class="d-flex align-items-center gap-3">
       <form method="post" action="{{ url_for('compras.marcar_comprado', item_id=item.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-lg p-0 border-0 bg-transparent" title="Marcar como comprado">
           <i class="bi {{ 'bi-check-square-fill text-success' if item.comprado else 'bi-square' }} fs-3"></i>
         </button>

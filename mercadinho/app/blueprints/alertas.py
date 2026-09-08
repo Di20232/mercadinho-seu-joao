@@ -2,7 +2,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from .. import data_referencia
 from ..extensions import db
 from ..models import Alerta, StatusAlerta
 from ..servicos import alertas as servico_alertas
@@ -13,7 +12,7 @@ bp = Blueprint("alertas", __name__, url_prefix="/alertas")
 @bp.route("/")
 @login_required
 def listar():
-    servico_alertas.verificar_tudo(data_referencia())
+    servico_alertas.verificar_tudo()  # sempre no dia real, nunca no "dia de teste"
     pendentes = servico_alertas.alertas_do_usuario(current_user, StatusAlerta.PENDENTE)
     resolvidos = servico_alertas.alertas_do_usuario(current_user, StatusAlerta.RESOLVIDO)[:20]
     return render_template("alertas/listar.html", pendentes=pendentes,

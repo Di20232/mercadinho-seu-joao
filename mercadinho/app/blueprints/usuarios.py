@@ -56,9 +56,14 @@ def _salvar(usuario):
         flash("Defina uma senha para a pessoa entrar.", "erro")
         return redirect(request.url)
 
+    papel_valor = request.form.get("papel") or "repositor"
+    if papel_valor not in [p.value for p in Papel]:
+        flash("Papel inválido.", "erro")
+        return redirect(request.url)
+
     usuario.nome = nome
     usuario.login = login
-    usuario.papel = Papel(request.form.get("papel") or "repositor")
+    usuario.papel = Papel(papel_valor)
     usuario.contato_telegram = (request.form.get("contato_telegram") or "").strip() or None
     usuario.ativo = request.form.get("ativo") != "nao"
     if senha:

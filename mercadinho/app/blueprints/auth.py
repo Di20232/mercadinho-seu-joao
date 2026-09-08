@@ -1,4 +1,6 @@
 """Login e logout. Simples de proposito: usuario e senha, sem OAuth."""
+from urllib.parse import urlparse
+
 from flask import (Blueprint, flash, redirect, render_template, request,
                    session, url_for)
 from flask_login import current_user, login_required, login_user, logout_user
@@ -6,6 +8,20 @@ from flask_login import current_user, login_required, login_user, logout_user
 from ..models import Usuario
 
 bp = Blueprint("auth", __name__)
+
+
+def _proximo_seguro(destino):
+    """So aceita um caminho relativo do proprio site.
+
+    Sem isso, um link tipo /entrar?next=https://site-falso.com levaria quem
+    fizesse login direto para fora do sistema (open redirect).
+    """
+    if not destino:
+        return None
+    partes = urlparse(destino)
+    if partes.scheme or partes.netloc:
+        return None
+    return destino
 
 
 @bp.route("/entrar", methods=["GET", "POST"])
@@ -19,7 +35,7 @@ def entrar():
         usuario = Usuario.query.filter_by(login=login).first()
         if usuario and usuario.ativo and usuario.conferir_senha(senha):
             login_user(usuario, remember=True)
-            return redirect(request.args.get("next") or url_for("painel.inicio"))
+            return redirect(_proximo_seguro(request.args.get("next")) or url_for("painel.inicio"))
         flash("Usuário ou senha não conferem.", "erro")
 
     return render_template("entrar.html")

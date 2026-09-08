@@ -21,7 +21,7 @@ def perdas():
     try:
         ano = int(request.args.get("ano", hoje.year))
         mes = int(request.args.get("mes", hoje.month))
-        if not 1 <= mes <= 12:
+        if not 1 <= mes <= 12 or not 1 <= ano <= 9999:
             raise ValueError
     except ValueError:
         ano, mes = hoje.year, hoje.month

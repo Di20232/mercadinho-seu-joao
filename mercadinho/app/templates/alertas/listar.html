@@ -24,6 +24,7 @@
         </div>
       </div>
       <form method="post" action="{{ url_for('alertas.resolver', alerta_id=alerta.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-sm btn-outline-success" title="Já resolvi">
           <i class="bi bi-check-lg"></i> Resolvi
         </button>

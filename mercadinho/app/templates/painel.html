@@ -136,6 +136,7 @@
     <strong class="small text-uppercase text-muted d-block mb-2">Ver como fica em outro dia</strong>
     <p class="small text-muted">Use para conferir, por exemplo, como o estoque aparece numa sexta-feira ou na véspera de um feriado.</p>
     <form method="post" action="{{ url_for('painel.dia_de_teste') }}" class="d-flex gap-2">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="date" name="data" class="form-control" value="{{ data_referencia }}">
       <button class="btn btn-outline-secondary">Ver</button>
     </form>

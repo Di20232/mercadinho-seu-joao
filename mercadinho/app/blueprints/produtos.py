@@ -98,8 +98,13 @@ def _salvar(produto):
         flash(f"Já existe um produto chamado {nome}.", "erro")
         return redirect(request.url)
 
+    categoria_valor = request.form.get("categoria") or "nao_perecivel"
+    if categoria_valor not in [c.value for c in Categoria]:
+        flash("Categoria inválida.", "erro")
+        return redirect(request.url)
+
     produto.nome = nome
-    produto.categoria = Categoria(request.form.get("categoria") or "nao_perecivel")
+    produto.categoria = Categoria(categoria_valor)
     produto.setor = (request.form.get("setor") or "Mercearia").strip()
     produto.unidade_medida = (request.form.get("unidade_medida") or "un").strip()
     produto.limite_minimo = _decimal(request.form.get("limite_minimo"), Decimal("0"))
@@ -117,7 +122,8 @@ def _salvar(produto):
     db.session.add(produto)
     db.session.commit()
 
-    servico_alertas.avaliar_produto(produto, data_referencia())
+    # Sempre no dia real, nunca no "dia de teste" (ver painel.py)
+    servico_alertas.avaliar_produto(produto)
     db.session.commit()
 
     flash(f"{'Produto cadastrado' if novo_produto else 'Produto atualizado'}: {produto.nome}.",

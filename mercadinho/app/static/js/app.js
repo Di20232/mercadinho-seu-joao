@@ -107,9 +107,13 @@
     botao.addEventListener("click", function () {
       var id = botao.dataset.produto;
       botao.disabled = true;
+      var meta = document.querySelector('meta[name="csrf-token"]');
       fetch("/api/saida-rapida", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": meta ? meta.content : ""
+        },
         body: JSON.stringify({ produto_id: Number(id), quantidade: 1 })
       })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, dados: d }; }); })
