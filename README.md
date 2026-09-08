@@ -8,6 +8,7 @@ Sistema web de controle de vendas e estoque para pequeno comerciante (mercadinho
 
 - **Vendas**: tela de caixa (busca produto por nome/código de barras, monta o carrinho, confirma a venda). Cada venda desconta o estoque automaticamente.
 - **Estoque**: cadastro de produtos, entradas de mercadoria (compras), ajustes/baixas (perda, vencimento, quebra), e histórico completo de movimentações.
+- **Importação de planilha**: carrega e atualiza o catálogo a partir de um Excel (`.xlsx`), CSV ou de dados colados direto do Excel/Google Planilhas — reconhece as colunas sozinho, mostra tudo para conferência e só grava depois que o dono confirma.
 - **Previsão de esgotamento**: com base na média de vendas dos últimos 30 dias, o sistema estima em quantos dias cada produto vai acabar — para saber o que repor antes de faltar.
 - **Produtos parados**: lista produtos com estoque mas sem nenhuma venda nos últimos 60 dias — ajuda a evitar comprar mais do que gira.
 - **Alertas de validade**: produtos perto de vencer aparecem no painel (evita perda por produto vencido).
@@ -49,6 +50,8 @@ docker compose exec app npm run simulate:sales    # opcional: histórico de vend
 
 Acesse `http://localhost:3100`. Para customizar (senha do banco, e-mail/senha do administrador, SMTP), crie um `.env` na raiz do projeto — o `docker-compose.yml` lê as mesmas variáveis do `.env.example`, com valores padrão só para uso local.
 
+O banco fica exposto em `localhost:5433` (e não na 5432, que costuma já estar ocupada por um PostgreSQL instalado direto na máquina) — é essa porta que o `npm run dev` e o `npm test` usam para falar com o container.
+
 - `docker compose stop` / `docker compose start` — para e liga de novo sem perder nada.
 - `docker compose down` (sem `-v`) — remove os containers mas mantém o volume/dados.
 - `docker compose down -v` — **apaga os dados de vez** (só use se for isso mesmo que quiser).
@@ -64,6 +67,37 @@ Acesse `http://localhost:3100`. Para customizar (senha do banco, e-mail/senha do
 `npm run simulate:sales` ([prisma/simulateSales.js](prisma/simulateSales.js)) gera um histórico de vendas realista, espalhado nos últimos 14 dias (`SIMULATE_DAYS` para mudar a janela) — ao contrário de uma venda feita pela tela ou pela API (que sempre grava a data de agora), este script "volta no tempo", alternando entre o administrador e um caixa de demonstração. Isso é o que faz o **Relatório de vendas por dia** mostrar uma tendência de verdade em vez de um único dia, e a **previsão de esgotamento** calcular uma taxa de venda diária real em vez de zero. Requer produtos já cadastrados (`npm run seed:products` ou seus próprios produtos).
 
 É seguro rodar mais de uma vez: identifica cada produto pelo código de barras e atualiza em vez de duplicar. Edite a lista no arquivo para refletir os produtos, preços e código de barras reais do cliente antes de usar em produção — os dados atuais são só um ponto de partida.
+
+### Importação de planilha (aba "Importar")
+
+Cadastrar centenas de produtos à mão é o maior obstáculo para começar a usar o sistema. A aba **Importar** (só para o administrador) resolve isso a partir do arquivo que o comerciante já tem — a lista do fornecedor, a planilha de preços, o inventário do contador.
+
+**Formatos aceitos**: Excel `.xlsx`/`.xlsm`, `.csv`, `.txt`/`.tsv`, ou dados **colados** direto do Excel / Google Planilhas (copiar e colar na caixa de texto). Arquivos `.xls` antigos e `.ods` precisam ser salvos como `.xlsx` ou `.csv` antes — o sistema avisa quando isso acontece. Também há um **modelo em Excel** para baixar já com as colunas certas.
+
+**O fluxo é sempre em quatro passos**, e nada é gravado antes da confirmação:
+
+1. **Escolher** o arquivo (ou colar os dados).
+2. **Conferir as colunas** — o sistema adivinha o que é cada uma pelo cabeçalho (`EAN`, `Cód. Barras` e `GTIN` viram código de barras; `VLR VENDA`, `Preço` e `Valor` viram preço de venda; `QTDE`, `Saldo` e `Estoque` viram estoque, e assim por diante), mostrando embaixo de cada campo um exemplo real da planilha para conferência. Qualquer coluna pode ser corrigida ou marcada como "não importar" sem reenviar o arquivo.
+3. **Conferir o que será gravado** — uma tabela linha a linha dizendo o que vai ser cadastrado, atualizado (com `preço antigo → preço novo` e `estoque antigo → estoque novo`), ignorado ou barrado por erro.
+4. **Confirmar**.
+
+**O que o sistema entende sozinho**: preços no formato brasileiro (`R$ 1.234,56`) e no internacional (`1,234.56`); datas como `31/12/2026`, `31-12-26` e o formato interno de data do Excel; códigos de barras que o Excel converteu em número; acentuação de arquivos CSV salvos pelo Excel em português (Windows-1252), que sem isso viraria `Caf<?>` no lugar de `Café`.
+
+**Opções de aplicação**:
+
+| Opção | Para quê |
+|---|---|
+| Cadastrar novos e atualizar existentes / só cadastrar / só atualizar | Controla se a planilha pode criar produtos, mexer nos que já existem, ou ambos. |
+| Identificar por código de barras (padrão) ou por nome | Como cada linha é ligada a um produto já cadastrado. |
+| Coluna de estoque: só no cadastro / substituir o saldo (balanço) / somar ao saldo (entrada de mercadoria) | Define se a planilha mexe no estoque de quem já existe, e como. |
+
+**Proteções** (todas verificadas por testes de regressão em [test/integration.test.js](test/integration.test.js)):
+
+- Toda alteração de estoque vinda da planilha entra no **extrato de movimentações** com saldo anterior e novo, igual a uma entrada ou ajuste feito à mão — a importação nunca é um caminho paralelo que burla a auditoria.
+- Linha cujo código de barras pertence a **outro** produto é recusada, nunca sobrescrita em silêncio.
+- Código de barras repetido dentro do próprio arquivo é barrado, para não cadastrar o mesmo produto duas vezes nem contar a mesma entrada de estoque em dobro.
+- Cada linha é gravada na sua própria transação: uma linha problemática no meio do arquivo não descarta as que já passaram, e o resultado final aponta exatamente quais falharam e por quê.
+- Limite de 1.000 linhas e 5 MB por importação; a rota é exclusiva do administrador.
 
 ## Publicando na nuvem (exemplo: Render, Railway ou similar)
 
@@ -137,9 +171,19 @@ Além da segurança, o projeto passou por uma rodada de auditoria de qualidade/U
 npm test
 ```
 
-Roda uma suíte de testes de integração ([test/integration.test.js](test/integration.test.js)) com o test runner nativo do Node (`node:test`, sem dependências novas) contra um PostgreSQL real — sobe a aplicação de verdade em memória e faz requisições HTTP reais. Cobre regressão dos bugs mais graves encontrados na auditoria: condição de corrida em estoque concorrente (entradas e vendas simultâneas), revogação de sessão em tempo real, autorização por papel, CSRF, SQL injection, validação de data de calendário, limite de overflow numérico, e reativação de produto.
+Roda uma suíte de testes de integração ([test/integration.test.js](test/integration.test.js)) com o test runner nativo do Node (`node:test`, sem dependências novas) contra um PostgreSQL real — sobe a aplicação de verdade em memória e faz requisições HTTP reais. Cobre regressão dos bugs mais graves encontrados na auditoria: condição de corrida em estoque concorrente (entradas e vendas simultâneas), revogação de sessão em tempo real, autorização por papel, CSRF, SQL injection, validação de data de calendário, limite de overflow numérico, e reativação de produto. A importação de planilha tem seu próprio bloco: autorização, leitura de `.xlsx`, formatos numéricos e de data brasileiros, rastro de auditoria no estoque, e as travas contra duplicidade e contra sobrescrever o produto dono de um código de barras.
 
 **Atenção**: a suíte apaga todos os dados do banco apontado por `DATABASE_URL` antes de rodar. Use sempre um banco dedicado a testes — nunca aponte para dados reais. Por segurança, a suíte recusa rodar a menos que o nome do banco contenha "test", ou que `ALLOW_DB_RESET=true` seja definido explicitamente.
+
+Com o ambiente Docker do projeto já no ar, um banco de testes separado sai assim (o banco de trabalho fica intacto):
+
+```bash
+docker compose exec db psql -U postgres -c "CREATE DATABASE contro_vend_test"
+```
+
+```bash
+DATABASE_URL="postgresql://postgres:changeme_local_only@localhost:5433/contro_vend_test?schema=public" npm test
+```
 
 ## Testes realizados manualmente
 

@@ -16,6 +16,7 @@ const salesRoutes = require('./routes/sales');
 const dashboardRoutes = require('./routes/dashboard');
 const reportsRoutes = require('./routes/reports');
 const usersRoutes = require('./routes/users');
+const importsRoutes = require('./routes/imports');
 
 const app = express();
 
@@ -41,7 +42,15 @@ app.use(
   }),
 );
 app.use(cors({ origin: config.clientOrigin, credentials: true }));
-app.use(express.json({ limit: '100kb' }));
+// 100kb cobre com folga qualquer requisição normal do app. A importação de
+// planilha é a exceção — a grade lida do arquivo volta ao servidor a cada
+// pré-visualização — então aquele roteador traz o próprio parser, com limite
+// maior, e é pulado aqui.
+const jsonBodyParser = express.json({ limit: '100kb' });
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/imports/')) return next();
+  jsonBodyParser(req, res, next);
+});
 app.use(cookieParser());
 
 // Limite geral de requisições por IP para toda a API (proteção básica contra abuso/DoS simples).
@@ -56,6 +65,7 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/imports', importsRoutes);
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 

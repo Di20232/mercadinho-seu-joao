@@ -47,6 +47,7 @@ function switchTab(name) {
     vendas: renderVendas,
     produtos: renderProdutos,
     estoque: renderEstoque,
+    importar: renderImportar,
     relatorios: renderRelatorios,
     usuarios: renderUsuarios,
   };
@@ -442,6 +443,244 @@ async function renderEstoque() {
     ]));
   });
   if (movements.length === 0) body.appendChild(el('tr', {}, el('td', { colspan: '7', class: 'muted' }, 'Nenhuma movimentação registrada.')));
+}
+
+// ---------- Importar planilha ----------
+// A grade lida do arquivo fica aqui no navegador para que trocar o mapeamento
+// de colunas ou uma opção não exija reenviar o arquivo. Quem valida e decide
+// o que gravar é sempre o servidor — a tela só mostra o plano que ele devolve.
+let importState = null;
+
+const IMPORT_STEPS = ['source', 'mapping', 'preview', 'result'];
+
+function showImportStep(step) {
+  IMPORT_STEPS.forEach((name) => {
+    document.getElementById(`imp-step-${name}`).hidden = name !== step;
+  });
+}
+
+async function renderImportar() {
+  activeTemplate('importar');
+  importState = null;
+
+  document.getElementById('imp-read-btn').addEventListener('click', readSpreadsheet);
+  document.getElementById('imp-back-btn').addEventListener('click', () => showImportStep('source'));
+  document.getElementById('imp-adjust-btn').addEventListener('click', () => showImportStep('mapping'));
+  document.getElementById('imp-preview-btn').addEventListener('click', previewImport);
+  document.getElementById('imp-commit-btn').addEventListener('click', commitImport);
+  document.getElementById('imp-restart-btn').addEventListener('click', renderImportar);
+}
+
+async function readSpreadsheet() {
+  const msg = document.getElementById('imp-source-msg');
+  const btn = document.getElementById('imp-read-btn');
+  msg.hidden = true;
+
+  const file = document.getElementById('imp-file').files[0];
+  const pasted = document.getElementById('imp-paste').value.trim();
+  if (!file && !pasted) {
+    msg.textContent = 'Escolha um arquivo ou cole os dados da planilha.';
+    msg.hidden = false;
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    let body;
+    if (file) {
+      body = new FormData();
+      body.append('file', file);
+    } else {
+      body = { text: pasted };
+    }
+    importState = await api.post('/imports/products/parse', body);
+    renderColumnMapping();
+    showImportStep('mapping');
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Mostra, abaixo de cada seleção, o primeiro valor preenchido daquela coluna.
+// É o que permite conferir o mapeamento sem abrir a planilha do lado.
+function columnSample(columnIndex) {
+  if (columnIndex === '') return '';
+  const value = importState.rows.map((row) => row[Number(columnIndex)]).find((cell) => cell !== null && cell !== '');
+  return value === undefined ? '(coluna vazia)' : `Ex: ${value}`;
+}
+
+function renderColumnMapping() {
+  const { headers, rows, fields, mapping } = importState;
+  document.getElementById('imp-grid-info').textContent =
+    `${rows.length} linha(s) de dados e ${headers.length} coluna(s) lidas. Confira se cada campo aponta para a coluna certa.`;
+
+  const grid = document.getElementById('imp-map-grid');
+  grid.innerHTML = '';
+
+  fields.forEach((field) => {
+    const selectId = `imp-map-${field.key}`;
+    const sample = el('span', { class: 'map-sample' });
+    const select = el('select', {
+      id: selectId,
+      onchange: (e) => { sample.textContent = columnSample(e.target.value); },
+    }, [el('option', { value: '' }, '— não importar —')]);
+
+    headers.forEach((header, index) => select.appendChild(el('option', { value: String(index) }, header)));
+    select.value = mapping[field.key] === undefined ? '' : String(mapping[field.key]);
+    sample.textContent = columnSample(select.value);
+
+    grid.appendChild(el('div', {}, [
+      el('label', { for: selectId }, field.required ? `${field.label} (obrigatório)` : field.label),
+      select,
+      sample,
+    ]));
+  });
+}
+
+function buildImportPayload() {
+  const mapping = {};
+  importState.fields.forEach((field) => {
+    const value = document.getElementById(`imp-map-${field.key}`).value;
+    if (value !== '') mapping[field.key] = Number(value);
+  });
+
+  return {
+    headers: importState.headers,
+    rows: importState.rows,
+    mapping,
+    options: {
+      mode: document.getElementById('imp-mode').value,
+      matchBy: document.getElementById('imp-match-by').value,
+      stockMode: document.getElementById('imp-stock-mode').value,
+    },
+  };
+}
+
+async function previewImport() {
+  const msg = document.getElementById('imp-map-msg');
+  const btn = document.getElementById('imp-preview-btn');
+  msg.hidden = true;
+  btn.disabled = true;
+
+  try {
+    // O mesmo payload conferido aqui é o que vai para a gravação — assim o
+    // que o usuário aprovou na tela é literalmente o que o servidor executa.
+    importState.payload = buildImportPayload();
+    renderImportPlan(await api.post('/imports/products/preview', importState.payload));
+    showImportStep('preview');
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+const IMPORT_ACTIONS = {
+  create: { label: 'Cadastrar', badge: 'ok' },
+  update: { label: 'Atualizar', badge: 'warn' },
+  skip: { label: 'Ignorar', badge: '' },
+  error: { label: 'Erro', badge: 'bad' },
+};
+
+function formatQuantity(value) {
+  return Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+}
+
+function renderImportPlan(plan) {
+  const summary = document.getElementById('imp-summary');
+  summary.innerHTML = '';
+  [
+    ['Novos', plan.summary.create],
+    ['Atualizações', plan.summary.update],
+    ['Ignorados', plan.summary.skip],
+    ['Com erro', plan.summary.error],
+  ].forEach(([label, value]) => {
+    summary.appendChild(el('div', { class: 'card stat' }, [
+      el('span', { class: 'stat-label' }, label),
+      el('span', { class: 'stat-value' }, String(value)),
+    ]));
+  });
+
+  // Toda linha com erro ou aviso aparece — são as que exigem decisão. As
+  // linhas limpas entram só como amostra: numa planilha de 1.000 itens, listar
+  // todas trava a tela sem acrescentar informação.
+  const notable = plan.items.filter((i) => i.errors.length > 0 || i.warnings.length > 0);
+  const clean = plan.items.filter((i) => i.errors.length === 0 && i.warnings.length === 0);
+  const shown = [...notable, ...clean.slice(0, 100)].sort((a, b) => a.line - b.line);
+
+  const body = document.getElementById('imp-preview-body');
+  body.innerHTML = '';
+
+  shown.forEach((item) => {
+    const action = IMPORT_ACTIONS[item.action];
+    const notes = el('ul', { class: 'note-list' });
+    item.errors.forEach((text) => notes.appendChild(el('li', { class: 'note-bad' }, text)));
+    item.warnings.forEach((text) => notes.appendChild(el('li', { class: 'note-warn' }, text)));
+    if (item.reason) notes.appendChild(el('li', {}, item.reason));
+
+    let price = item.values.salePrice === undefined ? '—' : formatMoney(item.values.salePrice);
+    if (item.before && item.values.salePrice !== undefined && item.before.salePrice !== item.values.salePrice) {
+      price = `${formatMoney(item.before.salePrice)} → ${formatMoney(item.values.salePrice)}`;
+    }
+
+    let stock = '—';
+    if (item.action === 'create') stock = formatQuantity(item.resultingStock);
+    else if (item.stockDelta) stock = `${formatQuantity(item.before.currentStock)} → ${formatQuantity(item.resultingStock)}`;
+
+    body.appendChild(el('tr', { class: item.action === 'error' ? 'row-error' : (item.action === 'skip' ? 'row-skip' : '') }, [
+      el('td', {}, String(item.line)),
+      el('td', {}, el('span', { class: `badge ${action.badge}` }, action.label)),
+      el('td', {}, item.values.name || '—'),
+      el('td', {}, price),
+      el('td', {}, stock),
+      el('td', {}, notes.childElementCount > 0 ? notes : el('span', { class: 'muted' }, '—')),
+    ]));
+  });
+
+  const omitted = plan.items.length - shown.length;
+  if (omitted > 0) {
+    body.appendChild(el('tr', {}, el('td', { colspan: '6', class: 'muted' }, `+ ${omitted} linha(s) sem observações não listadas aqui.`)));
+  }
+
+  document.getElementById('imp-commit-btn').disabled = plan.summary.create + plan.summary.update === 0;
+}
+
+async function commitImport() {
+  const msg = document.getElementById('imp-preview-msg');
+  const btn = document.getElementById('imp-commit-btn');
+  msg.hidden = true;
+
+  if (!confirm('Confirmar a importação? Os produtos serão cadastrados e atualizados conforme a conferência acima.')) return;
+
+  btn.disabled = true;
+  try {
+    const result = await api.post('/imports/products/commit', importState.payload);
+    document.getElementById('imp-result-text').textContent =
+      `${result.created} produto(s) cadastrado(s), ${result.updated} atualizado(s), ${result.skipped} ignorado(s).`;
+
+    const failuresBox = document.getElementById('imp-failures');
+    const failuresBody = document.getElementById('imp-failures-body');
+    failuresBody.innerHTML = '';
+    result.failures.forEach((failure) => {
+      failuresBody.appendChild(el('tr', {}, [
+        el('td', {}, String(failure.line)),
+        el('td', {}, failure.name || '—'),
+        el('td', {}, failure.error),
+      ]));
+    });
+    failuresBox.hidden = result.failures.length === 0;
+
+    showImportStep('result');
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------- Relatórios ----------

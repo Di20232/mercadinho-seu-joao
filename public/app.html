@@ -14,6 +14,7 @@
       <button data-tab="vendas" class="tab-btn">Vendas</button>
       <button data-tab="produtos" class="tab-btn">Produtos</button>
       <button data-tab="estoque" class="tab-btn" data-admin-only>Estoque</button>
+      <button data-tab="importar" class="tab-btn" data-admin-only>Importar</button>
       <button data-tab="relatorios" class="tab-btn" data-admin-only>Relatórios</button>
       <button data-tab="usuarios" class="tab-btn" data-admin-only>Usuários</button>
     </nav>
@@ -154,6 +155,95 @@
           <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Estoque resultante</th><th>Motivo</th><th>Usuário</th></tr></thead>
           <tbody id="movements-list"></tbody>
         </table></div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-importar">
+    <section>
+      <h2>Importar planilha</h2>
+
+      <div class="card" id="imp-step-source">
+        <h3>1. Escolha a planilha</h3>
+        <p class="muted">Aceita Excel (.xlsx), CSV e arquivos de texto separados por ponto e vírgula, vírgula ou tabulação. As colunas são reconhecidas automaticamente pelo cabeçalho — no passo seguinte você confere e ajusta o que quiser.</p>
+
+        <label for="imp-file">Arquivo</label>
+        <input id="imp-file" type="file" accept=".xlsx,.xlsm,.csv,.txt,.tsv" />
+
+        <label for="imp-paste">Ou cole os dados copiados do Excel / Google Planilhas</label>
+        <textarea id="imp-paste" rows="4" placeholder="Cole aqui, incluindo a linha de cabeçalho"></textarea>
+
+        <div class="form-actions">
+          <button type="button" id="imp-read-btn">Ler planilha</button>
+          <a class="link-action" href="/api/imports/products/template">Baixar modelo em Excel</a>
+        </div>
+        <p id="imp-source-msg" class="error" hidden></p>
+      </div>
+
+      <div class="card" id="imp-step-mapping" hidden>
+        <h3>2. Confira as colunas</h3>
+        <p class="muted" id="imp-grid-info"></p>
+        <div class="map-grid" id="imp-map-grid"></div>
+
+        <h3 class="spaced">Como aplicar</h3>
+        <div class="grid-3">
+          <div>
+            <label for="imp-mode">Produtos</label>
+            <select id="imp-mode">
+              <option value="upsert">Cadastrar novos e atualizar existentes</option>
+              <option value="createOnly">Somente cadastrar novos</option>
+              <option value="updateOnly">Somente atualizar existentes</option>
+            </select>
+          </div>
+          <div>
+            <label for="imp-match-by">Identificar o produto por</label>
+            <select id="imp-match-by">
+              <option value="barcode">Código de barras (e nome, quando faltar)</option>
+              <option value="name">Nome do produto</option>
+            </select>
+          </div>
+          <div>
+            <label for="imp-stock-mode">Coluna de estoque</label>
+            <select id="imp-stock-mode">
+              <option value="ignore">Só no cadastro de produtos novos</option>
+              <option value="set">Substituir o saldo atual (balanço)</option>
+              <option value="add">Somar ao saldo atual (entrada de mercadoria)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="imp-preview-btn">Conferir antes de gravar</button>
+          <button type="button" id="imp-back-btn" class="secondary">Trocar planilha</button>
+        </div>
+        <p id="imp-map-msg" class="error" hidden></p>
+      </div>
+
+      <div class="card" id="imp-step-preview" hidden>
+        <h3>3. Confira o que será gravado</h3>
+        <div class="grid-cards" id="imp-summary"></div>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Linha</th><th>Ação</th><th>Produto</th><th>Preço de venda</th><th>Estoque</th><th>Observações</th></tr></thead>
+          <tbody id="imp-preview-body"></tbody>
+        </table></div>
+        <div class="form-actions">
+          <button type="button" id="imp-commit-btn">Confirmar importação</button>
+          <button type="button" id="imp-adjust-btn" class="secondary">Voltar e ajustar</button>
+        </div>
+        <p id="imp-preview-msg" class="error" hidden></p>
+      </div>
+
+      <div class="card" id="imp-step-result" hidden>
+        <h3>Importação concluída</h3>
+        <p id="imp-result-text"></p>
+        <div id="imp-failures" hidden>
+          <h3 class="spaced">Linhas que não puderam ser gravadas</h3>
+          <div class="table-wrap"><table class="table">
+            <thead><tr><th>Linha</th><th>Produto</th><th>Motivo</th></tr></thead>
+            <tbody id="imp-failures-body"></tbody>
+          </table></div>
+        </div>
+        <button type="button" id="imp-restart-btn">Importar outra planilha</button>
       </div>
     </section>
   </template>

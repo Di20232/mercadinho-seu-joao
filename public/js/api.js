@@ -3,13 +3,17 @@
 // padroniza o tratamento de erros da API.
 async function apiRequest(path, { method = 'GET', body } = {}) {
   const headers = { 'X-Requested-With': 'fetch' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // Upload de planilha: o Content-Type do multipart precisa carregar o
+  // "boundary" que o próprio navegador gera — defini-lo à mão quebraria a
+  // leitura do arquivo no servidor.
+  const isFormData = body instanceof FormData;
+  if (body !== undefined && !isFormData) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(`/api${path}`, {
     method,
     headers,
     credentials: 'same-origin',
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : (isFormData ? body : JSON.stringify(body)),
   });
 
   if (res.status === 401) {
