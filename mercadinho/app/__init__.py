@@ -1,15 +1,17 @@
 """Mercadinho do Seu João — sistema de controle de estoque (MVP)."""
+import logging
 from datetime import date, datetime
 
 from flask import Flask, g, session
 
-from .config import Config
+from .config import CHAVE_DE_DESENVOLVIMENTO, Config
 from .extensions import csrf, db, login_manager, migrate
 
 
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
+    _conferir_chave(app)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -43,6 +45,22 @@ def create_app(config_object=Config):
         }
 
     return app
+
+
+def _conferir_chave(app):
+    """Nao deixa subir em producao com a chave de exemplo.
+
+    Com a chave padrao, qualquer um que conheca o codigo consegue forjar o
+    cookie de sessao e entrar como o dono da loja.
+    """
+    if app.config.get("TESTING") or app.config.get("DEBUG"):
+        return
+    if app.config.get("SECRET_KEY") in (CHAVE_DE_DESENVOLVIMENTO,
+                                        "troque-esta-chave-em-producao", "", None):
+        raise RuntimeError(
+            "SECRET_KEY não configurada. Defina a variável SECRET_KEY com um valor "
+            "secreto antes de publicar (veja o .env.example)."
+        )
 
 
 def data_referencia():

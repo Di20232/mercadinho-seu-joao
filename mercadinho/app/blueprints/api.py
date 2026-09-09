@@ -1,10 +1,8 @@
 """Endpoints JSON usados pelo JavaScript das telas (busca e baixa rapida)."""
-from decimal import Decimal, InvalidOperation
-
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from .. import data_referencia
+from .. import data_referencia, formulario
 from ..extensions import db
 from ..models import Produto
 from ..servicos import alertas as servico_alertas
@@ -53,12 +51,13 @@ def saida_rapida():
         return jsonify({"ok": False, "erro": "Você não pode dar baixa no estoque."}), 403
 
     dados = request.get_json(silent=True) or {}
-    produto = db.session.get(Produto, int(dados.get("produto_id") or 0))
-    try:
-        quantidade = Decimal(str(dados.get("quantidade", "1")).replace(",", "."))
-    except (InvalidOperation, ValueError):
+    quantidade = formulario.decimal(str(dados.get("quantidade", "1")))
+    if not quantidade or quantidade <= 0:
         return jsonify({"ok": False, "erro": "Quantidade inválida."}), 400
-    if not produto or quantidade <= 0:
+
+    produto_id = formulario.inteiro(str(dados.get("produto_id", "")))
+    produto = db.session.get(Produto, produto_id) if produto_id else None
+    if not produto or not produto.ativo:
         return jsonify({"ok": False, "erro": "Produto não encontrado."}), 404
 
     try:
@@ -69,7 +68,7 @@ def saida_rapida():
         return jsonify({"ok": False, "erro": str(erro)}), 400
 
     db.session.commit()
-    servico_alertas.avaliar_produto(produto, data_referencia())
+    servico_alertas.avaliar_produto(produto)  # sempre no dia real
     db.session.commit()
 
     situacao_atual = servico_estoque.situacao_produto(produto, data_referencia())

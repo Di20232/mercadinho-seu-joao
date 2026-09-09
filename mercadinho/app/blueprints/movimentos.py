@@ -4,12 +4,12 @@ As telas sao curtas de proposito: escolher o produto, digitar a quantidade,
 confirmar. Nada de conta na cabeca do usuario.
 """
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
 
 from flask import (Blueprint, flash, redirect, render_template, request,
                    url_for)
 from flask_login import current_user, login_required
 
+from .. import formulario
 from ..extensions import db
 from ..models import (Categoria, LoteEstoque, MotivoPerda, Produto,
                       TipoMovimento)
@@ -21,15 +21,17 @@ from ..servicos import relatorios
 bp = Blueprint("movimentos", __name__, url_prefix="/movimentos")
 
 
-def _decimal(valor):
-    try:
-        return Decimal((valor or "").strip().replace(",", "."))
-    except InvalidOperation:
-        return None
-
-
 def _produtos_ativos():
     return Produto.query.filter_by(ativo=True).order_by(Produto.nome).all()
+
+
+def _produto_do_formulario():
+    """Produto escolhido no formulario, se existir e ainda estiver a' venda."""
+    produto_id = formulario.inteiro(request.form.get("produto_id"))
+    if produto_id is None:
+        return None
+    produto = db.session.get(Produto, produto_id)
+    return produto if produto and produto.ativo else None
 
 
 def _depois_do_movimento(produto):
@@ -55,8 +57,8 @@ def historico():
 def entrada():
     produtos = _produtos_ativos()
     if request.method == "POST":
-        produto = db.session.get(Produto, int(request.form.get("produto_id") or 0))
-        quantidade = _decimal(request.form.get("quantidade"))
+        produto = _produto_do_formulario()
+        quantidade = formulario.decimal(request.form.get("quantidade"))
         if not produto or not quantidade or quantidade <= 0:
             flash("Escolha o produto e a quantidade.", "erro")
             return redirect(url_for("movimentos.entrada"))
@@ -72,11 +74,14 @@ def entrada():
         if produto.categoria == Categoria.PERECIVEL and not data_validade:
             flash("Produto que estraga precisa da data de validade.", "erro")
             return redirect(url_for("movimentos.entrada"))
+        if data_validade and data_validade < date.today():
+            flash("Essa mercadoria já está vencida. Confira a data de validade.", "erro")
+            return redirect(url_for("movimentos.entrada"))
 
         servico_estoque.registrar_entrada(
             produto, quantidade, current_user, data_validade=data_validade,
-            origem_compra=(request.form.get("origem_compra") or "").strip() or None,
-            custo_unitario=_decimal(request.form.get("custo_unitario")),
+            origem_compra=formulario.texto(request.form.get("origem_compra"), 120) or None,
+            custo_unitario=formulario.dinheiro(request.form.get("custo_unitario")),
         )
         _depois_do_movimento(produto)
         flash(f"Chegou {quantidade} {produto.unidade_medida} de {produto.nome}.", "ok")
@@ -92,15 +97,15 @@ def saida():
     produtos = _produtos_ativos()
     saldos = servico_estoque.estoques_por_produto()
     if request.method == "POST":
-        produto = db.session.get(Produto, int(request.form.get("produto_id") or 0))
-        quantidade = _decimal(request.form.get("quantidade"))
+        produto = _produto_do_formulario()
+        quantidade = formulario.decimal(request.form.get("quantidade"))
         if not produto or not quantidade or quantidade <= 0:
             flash("Escolha o produto e a quantidade.", "erro")
             return redirect(url_for("movimentos.saida"))
         try:
             servico_estoque.registrar_saida(
                 produto, quantidade, current_user,
-                observacao=(request.form.get("observacao") or "").strip() or None,
+                observacao=formulario.texto(request.form.get("observacao"), 200) or None,
             )
         except servico_estoque.EstoqueInsuficiente as erro:
             db.session.rollback()
@@ -120,8 +125,8 @@ def perda():
     produtos = _produtos_ativos()
     saldos = servico_estoque.estoques_por_produto()
     if request.method == "POST":
-        produto = db.session.get(Produto, int(request.form.get("produto_id") or 0))
-        quantidade = _decimal(request.form.get("quantidade"))
+        produto = _produto_do_formulario()
+        quantidade = formulario.decimal(request.form.get("quantidade"))
         motivo_valor = request.form.get("motivo")
         if not produto or not quantidade or quantidade <= 0 or motivo_valor not in [
                 m.value for m in MotivoPerda]:
@@ -129,16 +134,16 @@ def perda():
             return redirect(url_for("movimentos.perda"))
 
         lote = None
-        lote_id = request.form.get("lote_id")
-        if lote_id and lote_id.isdigit():
-            lote = db.session.get(LoteEstoque, int(lote_id))
+        lote_id = formulario.inteiro(request.form.get("lote_id"))
+        if lote_id is not None:
+            lote = db.session.get(LoteEstoque, lote_id)
             if lote and lote.produto_id != produto.id:
                 flash("Esse lote não é desse produto.", "erro")
                 return redirect(url_for("movimentos.perda"))
         try:
             servico_estoque.registrar_perda(
                 produto, quantidade, current_user, MotivoPerda(motivo_valor), lote=lote,
-                observacao=(request.form.get("observacao") or "").strip() or None,
+                observacao=formulario.texto(request.form.get("observacao"), 200) or None,
             )
         except servico_estoque.EstoqueInsuficiente as erro:
             db.session.rollback()

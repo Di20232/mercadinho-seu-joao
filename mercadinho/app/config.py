@@ -20,8 +20,11 @@ def _int(nome, padrao):
         return padrao
 
 
+CHAVE_DE_DESENVOLVIMENTO = "dev-mercadinho-seu-joao"
+
+
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-mercadinho-seu-joao")
+    SECRET_KEY = os.getenv("SECRET_KEY", CHAVE_DE_DESENVOLVIMENTO)
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
@@ -29,6 +32,20 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+
+    # Cookie da sessao: nao sai do proprio site e o JavaScript nao le.
+    # Sem SameSite, um site de fora conseguia fazer o navegador mandar a
+    # sessao do dono junto de um pedido dele.
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = _bool("SESSION_COOKIE_SECURE", False)
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = _bool("SESSION_COOKIE_SECURE", False)
+
+    # Trava de tentativas de login (evita ficarem chutando a senha do dono)
+    LOGIN_MAX_TENTATIVAS = _int("LOGIN_MAX_TENTATIVAS", 5)
+    LOGIN_MINUTOS_BLOQUEIO = _int("LOGIN_MINUTOS_BLOQUEIO", 15)
 
     # Regras de negocio parametrizaveis (ver README)
     DIAS_AVISO_VALIDADE = _int("DIAS_AVISO_VALIDADE", 3)

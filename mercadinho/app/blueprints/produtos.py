@@ -1,11 +1,11 @@
 """Cadastro de produtos (Modulo 1)."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from flask import (Blueprint, flash, redirect, render_template, request,
                    url_for)
 from flask_login import login_required
 
-from .. import data_referencia
+from .. import data_referencia, formulario
 from ..extensions import db
 from ..models import Categoria, LoteEstoque, Papel, Produto, Usuario
 from ..seguranca import exige
@@ -18,15 +18,7 @@ SETORES = ["Açougue", "Bebidas", "Frios e laticínios", "Mercearia", "Hortifrut
            "Limpeza e higiene", "Padaria"]
 UNIDADES = ["un", "kg", "L", "pct", "cx", "dz"]
 
-
-def _decimal(valor, padrao=None):
-    valor = (valor or "").strip().replace(",", ".")
-    if not valor:
-        return padrao
-    try:
-        return Decimal(valor)
-    except InvalidOperation:
-        return padrao
+MAX_DIAS_AVISO = 365
 
 
 @bp.route("/")
@@ -88,7 +80,7 @@ def _responsaveis():
 
 
 def _salvar(produto):
-    nome = (request.form.get("nome") or "").strip()
+    nome = formulario.texto(request.form.get("nome"), 120)
     if not nome:
         flash("Escreva o nome do produto.", "erro")
         return redirect(request.url)
@@ -103,19 +95,46 @@ def _salvar(produto):
         flash("Categoria inválida.", "erro")
         return redirect(request.url)
 
+    # Numeros: o helper ja recusa negativo, NaN, Infinity e valor maior do que
+    # a coluna aguenta. Se o usuario digitou algo e nao passou, avisa em vez de
+    # gravar um numero errado calado.
+    limite = formulario.decimal(request.form.get("limite_minimo"))
+    limite_fds = formulario.decimal(request.form.get("limite_minimo_fim_de_semana"))
+    for campo, bruto, valor in (
+        ("limite mínimo", request.form.get("limite_minimo"), limite),
+        ("limite de fim de semana", request.form.get("limite_minimo_fim_de_semana"), limite_fds),
+        ("preço de custo", request.form.get("preco_custo"),
+         formulario.dinheiro(request.form.get("preco_custo"))),
+        ("preço de venda", request.form.get("preco_venda"),
+         formulario.dinheiro(request.form.get("preco_venda"))),
+    ):
+        if formulario.preenchido(bruto) and valor is None:
+            flash(f"O {campo} precisa ser um número positivo e dentro do razoável.", "erro")
+            return redirect(request.url)
+    if limite is None:          # campo em branco: sem limite definido
+        limite = Decimal("0")
+
+    responsavel_id = formulario.inteiro(request.form.get("responsavel_padrao_id"))
+    if responsavel_id is not None:
+        responsavel = db.session.get(Usuario, responsavel_id)
+        if not responsavel or not responsavel.ativo:
+            flash("Escolha uma pessoa válida para cuidar do produto.", "erro")
+            return redirect(request.url)
+
+    dias_aviso = formulario.inteiro(request.form.get("dias_aviso_validade"))
+    if dias_aviso is not None and dias_aviso > MAX_DIAS_AVISO:
+        dias_aviso = MAX_DIAS_AVISO
+
     produto.nome = nome
     produto.categoria = Categoria(categoria_valor)
-    produto.setor = (request.form.get("setor") or "Mercearia").strip()
-    produto.unidade_medida = (request.form.get("unidade_medida") or "un").strip()
-    produto.limite_minimo = _decimal(request.form.get("limite_minimo"), Decimal("0"))
-    produto.limite_minimo_fim_de_semana = _decimal(
-        request.form.get("limite_minimo_fim_de_semana"), None)
-    produto.preco_custo = _decimal(request.form.get("preco_custo"), None)
-    produto.preco_venda = _decimal(request.form.get("preco_venda"), None)
-    dias = (request.form.get("dias_aviso_validade") or "").strip()
-    produto.dias_aviso_validade = int(dias) if dias.isdigit() else None
-    responsavel = request.form.get("responsavel_padrao_id")
-    produto.responsavel_padrao_id = int(responsavel) if responsavel else None
+    produto.setor = formulario.texto(request.form.get("setor"), 60, "Mercearia")
+    produto.unidade_medida = formulario.texto(request.form.get("unidade_medida"), 10, "un")
+    produto.limite_minimo = limite
+    produto.limite_minimo_fim_de_semana = limite_fds
+    produto.preco_custo = formulario.dinheiro(request.form.get("preco_custo"))
+    produto.preco_venda = formulario.dinheiro(request.form.get("preco_venda"))
+    produto.dias_aviso_validade = dias_aviso
+    produto.responsavel_padrao_id = responsavel_id
     produto.ativo = request.form.get("ativo") != "nao"
 
     novo_produto = produto.id is None

@@ -83,10 +83,14 @@ def registrar_entrada(produto, quantidade, usuario, data_validade=None,
 
 
 def _lotes_para_consumo(produto, priorizar_vencidos=True):
-    """Lotes com saldo, do que vence antes para o que vence depois."""
+    """Lotes com saldo, do que vence antes para o que vence depois.
+
+    Vem com as linhas travadas: quem chegar depois espera esta baixa terminar,
+    em vez de ler um saldo velho e sobrescrever o resultado.
+    """
     consulta = LoteEstoque.query.filter(
         LoteEstoque.produto_id == produto.id, LoteEstoque.quantidade > 0
-    )
+    ).with_for_update()
     if priorizar_vencidos:
         ordem = (LoteEstoque.data_validade.asc().nullslast(), LoteEstoque.data_entrada.asc(),
                  LoteEstoque.id.asc())
@@ -96,14 +100,23 @@ def _lotes_para_consumo(produto, priorizar_vencidos=True):
 
 
 def _baixar_dos_lotes(produto, quantidade, lote_preferido=None):
-    """Tira a quantidade dos lotes e devolve [(lote, quantidade_tirada), ...]."""
+    """Tira a quantidade dos lotes e devolve [(lote, quantidade_tirada), ...].
+
+    Trava as linhas dos lotes no banco (SELECT ... FOR UPDATE) antes de ler o
+    saldo. Sem a trava, duas baixas ao mesmo tempo liam o mesmo saldo e uma
+    sobrescrevia a outra: davam-se doze baixas de 2 kg num estoque de 10 kg e
+    o sistema continuava mostrando 6 kg - justamente a falta de mercadoria que
+    ele existe para evitar.
+    """
     restante = _dec(quantidade)
-    disponivel = estoque_atual(produto)
+
+    lotes = _lotes_para_consumo(produto)   # ja' vem travado para esta transacao
+    disponivel = sum((_dec(l.quantidade) for l in lotes), ZERO)
     if restante > disponivel:
         raise EstoqueInsuficiente(produto, restante, disponivel)
 
-    lotes = _lotes_para_consumo(produto)
     if lote_preferido is not None:
+        db.session.refresh(lote_preferido, with_for_update=True)
         lotes = [lote_preferido] + [l for l in lotes if l.id != lote_preferido.id]
 
     baixas = []

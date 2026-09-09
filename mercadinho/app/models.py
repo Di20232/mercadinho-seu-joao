@@ -6,7 +6,7 @@ DiaEspecial foi acrescentada para dar suporte ao cenario de
 "sexta-feira / vespera de feriado" pedido na demonstracao.
 """
 import enum
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from flask_login import UserMixin
@@ -85,6 +85,10 @@ class Usuario(UserMixin, db.Model):
     ativo = db.Column(db.Boolean, nullable=False, default=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    # Trava contra chute de senha
+    tentativas_falhas = db.Column(db.Integer, nullable=False, default=0)
+    bloqueado_ate = db.Column(db.DateTime)
+
     produtos_sob_responsabilidade = db.relationship(
         "Produto", back_populates="responsavel_padrao", foreign_keys="Produto.responsavel_padrao_id"
     )
@@ -108,6 +112,22 @@ class Usuario(UserMixin, db.Model):
     def pode(self, acao):
         """Permissoes simples por papel (ver README, secao Perfis)."""
         return acao in PERMISSOES.get(self.papel, set())
+
+    @property
+    def esta_bloqueado(self):
+        """True enquanto durar a trava por erro de senha."""
+        return bool(self.bloqueado_ate and self.bloqueado_ate > datetime.utcnow())
+
+    def registrar_erro_de_senha(self, maximo, minutos):
+        """Conta mais um erro e tranca a conta quando passar do limite."""
+        self.tentativas_falhas = (self.tentativas_falhas or 0) + 1
+        if self.tentativas_falhas >= maximo:
+            self.bloqueado_ate = datetime.utcnow() + timedelta(minutes=minutos)
+            self.tentativas_falhas = 0
+
+    def registrar_acerto_de_senha(self):
+        self.tentativas_falhas = 0
+        self.bloqueado_ate = None
 
     def __repr__(self):
         return f"<Usuario {self.login} ({self.papel.value})>"

@@ -4,11 +4,23 @@ from datetime import datetime
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from .. import formulario
 from ..extensions import db
 from ..models import DiaEspecial, Papel, Usuario
 from ..seguranca import somente_admin
 
 bp = Blueprint("usuarios", __name__, url_prefix="/usuarios")
+
+TAMANHO_MINIMO_SENHA = 6
+
+
+def _ultimo_admin(usuario):
+    """True se nao houver outro administrador ativo alem deste."""
+    return Usuario.query.filter(
+        Usuario.papel == Papel.ADMIN,
+        Usuario.ativo.is_(True),
+        Usuario.id != usuario.id,
+    ).count() == 0
 
 
 @bp.route("/")
@@ -41,8 +53,8 @@ def editar(usuario_id):
 
 
 def _salvar(usuario):
-    nome = (request.form.get("nome") or "").strip()
-    login = (request.form.get("login") or "").strip().lower()
+    nome = formulario.texto(request.form.get("nome"), 120)
+    login = formulario.texto(request.form.get("login"), 60).lower()
     senha = request.form.get("senha") or ""
     if not nome or not login:
         flash("Preencha nome e usuário.", "erro")
@@ -55,17 +67,34 @@ def _salvar(usuario):
     if usuario.id is None and not senha:
         flash("Defina uma senha para a pessoa entrar.", "erro")
         return redirect(request.url)
+    if senha and len(senha) < TAMANHO_MINIMO_SENHA:
+        flash(f"A senha precisa ter pelo menos {TAMANHO_MINIMO_SENHA} letras ou números.",
+              "erro")
+        return redirect(request.url)
 
     papel_valor = request.form.get("papel") or "repositor"
     if papel_valor not in [p.value for p in Papel]:
         flash("Papel inválido.", "erro")
         return redirect(request.url)
 
+    novo_papel = Papel(papel_valor)
+    fica_ativo = request.form.get("ativo") != "nao"
+
+    # A loja nao pode ficar sem dono: se esta e' a ultima pessoa que administra
+    # o sistema, ela nao pode se rebaixar nem se desativar - ninguem mais
+    # conseguiria cadastrar produto, mexer em usuario ou destravar o sistema.
+    if usuario.id is not None and usuario.papel == Papel.ADMIN and usuario.ativo:
+        perde_o_posto = novo_papel != Papel.ADMIN or not fica_ativo
+        if perde_o_posto and _ultimo_admin(usuario):
+            flash("Esta é a última pessoa que administra a loja. Coloque outra no "
+                  "lugar antes de mudar o papel ou desativar.", "erro")
+            return redirect(request.url)
+
     usuario.nome = nome
     usuario.login = login
-    usuario.papel = Papel(papel_valor)
-    usuario.contato_telegram = (request.form.get("contato_telegram") or "").strip() or None
-    usuario.ativo = request.form.get("ativo") != "nao"
+    usuario.papel = novo_papel
+    usuario.contato_telegram = formulario.texto(request.form.get("contato_telegram"), 60) or None
+    usuario.ativo = fica_ativo
     if senha:
         usuario.definir_senha(senha)
 
