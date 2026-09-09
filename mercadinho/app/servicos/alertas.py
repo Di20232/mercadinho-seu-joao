@@ -8,6 +8,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from flask import current_app
+from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
 from ..models import (Alerta, Papel, StatusAlerta, TipoAlerta, Usuario)
@@ -48,10 +49,21 @@ def _abrir(produto, tipo, mensagem):
     destinatario = destinatario_do_produto(produto)
     if destinatario is None:
         return None
-    alerta = Alerta(produto=produto, tipo=tipo, destinatario=destinatario, mensagem=mensagem,
-                    status=StatusAlerta.PENDENTE, data_criacao=datetime.utcnow())
-    db.session.add(alerta)
-    db.session.flush()
+    # Montado pelas chaves, e nao pelas relacoes: assim o objeto so' entra na
+    # sessao dentro do savepoint abaixo, e o erro de duplicidade fica contido
+    # ali sem derrubar a transacao inteira.
+    alerta = Alerta(produto_id=produto.id, tipo=tipo, destinatario_id=destinatario.id,
+                    mensagem=mensagem, status=StatusAlerta.PENDENTE,
+                    data_criacao=datetime.utcnow())
+    # Duas telas abertas ao mesmo tempo passavam as duas pela conferencia acima
+    # e abriam o mesmo aviso em duplicidade. O indice unico no banco decide quem
+    # chegou primeiro; quem perder apenas desiste.
+    try:
+        with db.session.begin_nested():
+            db.session.add(alerta)
+            db.session.flush()
+    except IntegrityError:
+        return None
     return alerta
 
 

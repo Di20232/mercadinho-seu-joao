@@ -60,9 +60,11 @@ def entrar():
     return render_template("entrar.html")
 
 
-@bp.route("/sair")
+@bp.route("/sair", methods=["POST"])
 @login_required
 def sair():
+    # So' por POST (com token CSRF): por GET, bastava um <img src="/sair"> num
+    # site qualquer para deslogar quem estivesse usando o sistema.
     logout_user()
     session.pop("data_demo", None)
     flash("Você saiu do sistema.", "ok")

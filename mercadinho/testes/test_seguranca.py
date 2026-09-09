@@ -10,7 +10,8 @@ from decimal import Decimal
 import pytest
 
 from app.extensions import db
-from app.models import Categoria, LoteEstoque, Papel, Produto, Usuario
+from app.models import (Alerta, Categoria, LoteEstoque, Papel, Produto,
+                        StatusAlerta, Usuario)
 from app.servicos import estoque as servico
 from conftest import criar_produto, criar_usuario, entrar
 
@@ -221,3 +222,92 @@ def test_producao_recusa_subir_com_a_chave_de_exemplo(app):
 
     with pytest.raises(RuntimeError, match="SECRET_KEY"):
         create_app(ConfigDeProducao)
+
+
+# --------------------------------------------------------------------------
+# Rodada 3: cabecalhos, ciclo de vida da sessao e corridas de escrita
+# --------------------------------------------------------------------------
+
+def test_respostas_trazem_cabecalhos_de_seguranca(app, client, dono):
+    entrar(client, "joao")
+    cabecalhos = client.get("/").headers
+
+    assert cabecalhos["X-Frame-Options"] == "DENY"
+    assert cabecalhos["X-Content-Type-Options"] == "nosniff"
+    assert "frame-ancestors 'none'" in cabecalhos["Content-Security-Policy"]
+
+
+def test_trocar_a_senha_derruba_as_sessoes_abertas(app, dono):
+    """Um ex-funcionario com 'lembrar de mim' seguia entrando por um ano.
+
+    Confere direto o carregador de sessao: o identificador guardado no cookie
+    carrega uma marca da senha, entao o cookie antigo deixa de ser aceito.
+    """
+    identificador_antigo = dono.get_id()
+
+    dono.definir_senha("outra-senha-999")
+    db.session.commit()
+
+    carregar = app.login_manager._user_callback
+    assert carregar(identificador_antigo) is None    # cookie velho: recusado
+    assert carregar(dono.get_id()) is not None       # sessao nova: aceita
+
+
+def test_desativar_a_pessoa_derruba_as_sessoes_abertas(app, dono, repositora):
+    navegador = app.test_client()
+    entrar(navegador, "cida")
+    assert navegador.get("/").status_code == 200
+
+    recarregado = db.session.get(Usuario, repositora.id)
+    recarregado.ativo = False
+    db.session.commit()
+
+    navegador.delete_cookie("session")
+    assert navegador.get("/", follow_redirects=False).status_code == 302
+
+
+def test_sair_nao_funciona_por_link(app, client, dono):
+    """Por GET, um <img src="/sair"> de outro site deslogava quem estivesse usando."""
+    entrar(client, "joao")
+
+    assert client.get("/sair").status_code == 405
+    assert client.get("/").status_code == 200      # continua logado
+
+
+def test_byte_nulo_no_nome_nao_derruba_o_cadastro(app, client, dono):
+    entrar(client, "joao")
+    resposta = client.post("/produtos/novo", data={
+        "nome": "Arroz\x00tipo1", "categoria": "nao_perecivel", "setor": "Mercearia",
+        "unidade_medida": "un", "limite_minimo": "1",
+    }, follow_redirects=True)
+
+    assert resposta.status_code < 500
+    salvo = Produto.query.filter(Produto.nome.like("Arroz%")).first()
+    if salvo is not None:
+        assert "\x00" not in salvo.nome
+
+
+def test_telas_abertas_juntas_nao_duplicam_o_mesmo_aviso(app, dono):
+    """Oito painéis abrindo ao mesmo tempo abriam o mesmo aviso mais de uma vez."""
+    produto = criar_produto("Contrafilé", limite_minimo=Decimal("50"),
+                            responsavel_padrao=dono)
+    servico.registrar_entrada(produto, 1, dono)
+    db.session.commit()
+    produto_id = produto.id
+
+    def abrir_painel():
+        with app.app_context():
+            navegador = app.test_client()
+            entrar(navegador, "joao")
+            navegador.get("/")
+
+    threads = [threading.Thread(target=abrir_painel) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    db.session.expire_all()
+    pendentes = Alerta.query.filter_by(produto_id=produto_id,
+                                       status=StatusAlerta.PENDENTE).count()
+    assert pendentes <= 1

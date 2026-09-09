@@ -21,8 +21,32 @@ def create_app(config_object=Config):
     from . import models  # noqa: F401  (registra as tabelas)
 
     @login_manager.user_loader
-    def carregar_usuario(usuario_id):
-        return db.session.get(models.Usuario, int(usuario_id))
+    def carregar_usuario(identificador):
+        """Aceita a sessao so' se a senha ainda for a mesma de quando entrou.
+
+        O identificador carrega uma marca da senha (ver Usuario.get_id). Assim,
+        trocar a senha derruba as sessoes e os cookies de "lembrar de mim" que
+        ja' estavam abertos - antes, quem tinha o cookie continuava entrando
+        por um ano mesmo depois da troca.
+        """
+        id_texto = str(identificador).split(":", 1)[0]
+        if not id_texto.isdigit():
+            return None
+        usuario = db.session.get(models.Usuario, int(id_texto))
+        if usuario is None or usuario.get_id() != str(identificador):
+            return None
+        return usuario
+
+    @app.after_request
+    def cabecalhos_de_seguranca(resposta):
+        resposta.headers.setdefault("X-Content-Type-Options", "nosniff")
+        resposta.headers.setdefault("X-Frame-Options", "DENY")
+        resposta.headers.setdefault("Referrer-Policy", "same-origin")
+        resposta.headers.setdefault(
+            "Content-Security-Policy",
+            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+        )
+        return resposta
 
     _registrar_blueprints(app)
     _registrar_filtros(app)

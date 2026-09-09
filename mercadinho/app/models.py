@@ -8,6 +8,7 @@ DiaEspecial foi acrescentada para dar suporte ao cenario de
 import enum
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from hashlib import sha256
 
 from flask_login import UserMixin
 from sqlalchemy import Enum as SAEnum
@@ -112,6 +113,15 @@ class Usuario(UserMixin, db.Model):
     def pode(self, acao):
         """Permissoes simples por papel (ver README, secao Perfis)."""
         return acao in PERMISSOES.get(self.papel, set())
+
+    def get_id(self):
+        """Identificador da sessao: o id mais uma marca da senha atual.
+
+        Com a marca, trocar a senha invalida na hora as sessoes e os cookies
+        de "lembrar de mim" que ja' existiam.
+        """
+        marca = sha256((self.senha_hash or "").encode()).hexdigest()[:16]
+        return f"{self.id}:{marca}"
 
     @property
     def esta_bloqueado(self):
@@ -262,6 +272,13 @@ class Alerta(db.Model):
 
     produto = db.relationship("Produto", back_populates="alertas")
     destinatario = db.relationship("Usuario", back_populates="alertas")
+
+    __table_args__ = (
+        # No maximo um aviso pendente por produto e tipo. Sem isso, duas telas
+        # abertas ao mesmo tempo abriam o mesmo aviso duas vezes.
+        db.Index("uq_alerta_pendente_por_produto", "produto_id", "tipo",
+                 unique=True, postgresql_where=db.text("status = 'pendente'")),
+    )
 
     def __repr__(self):
         return f"<Alerta {self.tipo.value} produto={self.produto_id} {self.status.value}>"

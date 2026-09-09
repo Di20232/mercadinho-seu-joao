@@ -52,8 +52,13 @@ def dinheiro(valor, padrao=None):
 
 
 def texto(valor, limite, padrao=""):
-    """Le um texto ja cortado no tamanho da coluna, sem espaco sobrando."""
-    return ((valor or "").strip())[:limite] or padrao
+    """Le um texto limpo e ja' cortado no tamanho da coluna.
+
+    Tira os caracteres de controle: o byte nulo derrubava a pagina com erro,
+    porque o PostgreSQL nao aceita \\x00 dentro de texto.
+    """
+    limpo = "".join(c for c in (valor or "") if c == "\n" or c >= " ")
+    return limpo.strip()[:limite] or padrao
 
 
 def preenchido(valor):
