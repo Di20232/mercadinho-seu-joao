@@ -1,5 +1,9 @@
 let currentUser = null;
 let cart = []; // { productId, name, unit, price, quantity }
+let saleInFlight = false;
+let productsPage = 1;
+let movementsPage = 1;
+const LIST_PAGE_SIZE = 20;
 
 const content = document.getElementById('content');
 
@@ -212,25 +216,57 @@ function renderCart() {
   });
 
   updateCartTotal();
-  document.getElementById('confirm-sale-btn').disabled = cart.length === 0;
+  const btn = document.getElementById('confirm-sale-btn');
+  if (btn) {
+    btn.disabled = cart.length === 0 || saleInFlight;
+    btn.textContent = saleInFlight ? 'Registrando…' : 'Confirmar venda';
+  }
 }
 
 async function confirmSale() {
+  if (saleInFlight || cart.length === 0) return;
   const msg = document.getElementById('sale-msg');
   msg.hidden = true;
   const btn = document.getElementById('confirm-sale-btn');
+  saleInFlight = true;
   btn.disabled = true;
+  btn.textContent = 'Registrando…';
   try {
-    await api.post('/sales', { items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })) });
+    const sale = await api.post('/sales', { items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })) });
     cart = [];
     renderCart();
     await loadRecentSales();
+    openReceipt(sale);
   } catch (err) {
     msg.textContent = err.message;
     msg.hidden = false;
   } finally {
-    btn.disabled = cart.length === 0;
+    saleInFlight = false;
+    const stillThere = document.getElementById('confirm-sale-btn');
+    if (stillThere) {
+      stillThere.disabled = cart.length === 0;
+      stillThere.textContent = 'Confirmar venda';
+    }
   }
+}
+
+function openReceipt(sale) {
+  const modal = openModal('tpl-receipt');
+  const when = formatDateTime(sale.createdAt);
+  document.getElementById('receipt-meta').textContent = `${when} · ${sale.items.length} item(ns)`;
+  const body = document.getElementById('receipt-items');
+  body.innerHTML = '';
+  sale.items.forEach((item) => {
+    body.appendChild(el('tr', {}, [
+      el('td', {}, item.product),
+      el('td', {}, `${item.quantity} ${item.unit || ''}`.trim()),
+      el('td', {}, formatMoney(item.unitPrice)),
+      el('td', {}, formatMoney(item.subtotal)),
+    ]));
+  });
+  document.getElementById('receipt-total').textContent = formatMoney(sale.totalAmount);
+  document.getElementById('receipt-print-btn').addEventListener('click', () => window.print());
+  document.getElementById('receipt-close-btn').addEventListener('click', () => closeModal(modal));
 }
 
 async function loadRecentSales() {
@@ -264,17 +300,53 @@ async function loadRecentSales() {
 // ---------- Produtos ----------
 async function renderProdutos() {
   activeTemplate('produtos');
+  productsPage = 1;
   await loadProducts();
 
-  document.getElementById('product-search').addEventListener('input', debounce(loadProducts, 250));
+  document.getElementById('product-search').addEventListener('input', debounce(() => {
+    productsPage = 1;
+    loadProducts();
+  }, 250));
   const newBtn = document.getElementById('new-product-btn');
   if (newBtn) newBtn.addEventListener('click', () => openProductForm(null));
+}
+
+function renderPager(containerId, { page, pageSize, totalCount }, onPage) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  box.innerHTML = '';
+  if (totalCount === 0) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, totalCount);
+  box.appendChild(el('span', {}, `Mostrando ${from}–${to} de ${totalCount}`));
+  const actions = el('div', { class: 'pager-actions' });
+  const prev = el('button', {
+    type: 'button',
+    class: 'small secondary',
+    onclick: () => { if (page > 1) onPage(page - 1); },
+  }, 'Anterior');
+  prev.disabled = page <= 1;
+  const next = el('button', {
+    type: 'button',
+    class: 'small secondary',
+    onclick: () => { if (page < totalPages) onPage(page + 1); },
+  }, 'Próxima');
+  next.disabled = page >= totalPages;
+  actions.appendChild(prev);
+  actions.appendChild(next);
+  box.appendChild(actions);
 }
 
 async function loadProducts() {
   const term = document.getElementById('product-search')?.value.trim() || '';
   const includeInactive = currentUser.role === 'ADMIN' ? '&includeInactive=true' : '';
-  const products = await api.get(`/products?query=${encodeURIComponent(term)}${includeInactive}`);
+  const data = await api.get(`/products?query=${encodeURIComponent(term)}${includeInactive}&page=${productsPage}&pageSize=${LIST_PAGE_SIZE}`);
+  const products = data.products;
   const body = document.getElementById('products-list');
   body.innerHTML = '';
 
@@ -304,6 +376,10 @@ async function loadProducts() {
   });
 
   if (products.length === 0) body.appendChild(el('tr', {}, el('td', { colspan: '8', class: 'muted' }, 'Nenhum produto encontrado.')));
+  renderPager('products-pager', data, (nextPage) => {
+    productsPage = nextPage;
+    loadProducts();
+  });
 }
 
 function openProductForm(product) {
@@ -383,6 +459,7 @@ function openProductForm(product) {
 // ---------- Estoque ----------
 async function renderEstoque() {
   activeTemplate('estoque');
+  movementsPage = 1;
   const products = await api.get('/products');
 
   const entrySelect = document.getElementById('entry-product');
@@ -429,9 +506,15 @@ async function renderEstoque() {
     }
   });
 
-  const movements = await api.get('/stock/movements');
+  await loadMovements();
+}
+
+async function loadMovements() {
+  const data = await api.get(`/stock/movements?page=${movementsPage}&pageSize=${LIST_PAGE_SIZE}`);
   const body = document.getElementById('movements-list');
-  movements.forEach((m) => {
+  if (!body) return;
+  body.innerHTML = '';
+  data.movements.forEach((m) => {
     body.appendChild(el('tr', {}, [
       el('td', {}, formatDateTime(m.createdAt)),
       el('td', {}, m.product),
@@ -442,7 +525,11 @@ async function renderEstoque() {
       el('td', {}, m.user),
     ]));
   });
-  if (movements.length === 0) body.appendChild(el('tr', {}, el('td', { colspan: '7', class: 'muted' }, 'Nenhuma movimentação registrada.')));
+  if (data.movements.length === 0) body.appendChild(el('tr', {}, el('td', { colspan: '7', class: 'muted' }, 'Nenhuma movimentação registrada.')));
+  renderPager('movements-pager', data, (nextPage) => {
+    movementsPage = nextPage;
+    loadMovements();
+  });
 }
 
 // ---------- Importar planilha ----------
@@ -766,7 +853,6 @@ function openUserForm(user) {
   if (isEdit) {
     document.getElementById('u-id').value = user.id;
     document.getElementById('u-name').value = user.name;
-    document.getElementById('u-role').value = user.role;
     document.getElementById('u-active').checked = user.active;
   }
 
@@ -782,7 +868,6 @@ function openUserForm(user) {
       if (isEdit) {
         const payload = {
           name: document.getElementById('u-name').value,
-          role: document.getElementById('u-role').value,
           active: document.getElementById('u-active').checked,
         };
         if (password) payload.password = password;
@@ -791,7 +876,6 @@ function openUserForm(user) {
         await api.post('/users', {
           name: document.getElementById('u-name').value,
           email: document.getElementById('u-email').value,
-          role: document.getElementById('u-role').value,
           password,
         });
       }

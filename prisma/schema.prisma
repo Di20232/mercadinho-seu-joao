@@ -26,9 +26,27 @@ model User {
   passwordHash String
   role         Role            @default(CASHIER)
   active       Boolean         @default(true)
+  // Incrementado a cada troca de senha (ou desativação). Incluído no JWT; o
+  // middleware de auth compara com o valor do banco — divergência invalida a
+  // sessão. É como derrubamos cookies JWT já emitidos depois de um reset.
+  sessionVersion Int           @default(0)
   createdAt    DateTime        @default(now())
   sales        Sale[]
   movements    StockMovement[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Product {

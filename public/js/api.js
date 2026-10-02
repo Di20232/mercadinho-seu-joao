@@ -16,15 +16,17 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
     body: body === undefined ? undefined : (isFormData ? body : JSON.stringify(body)),
   });
 
+  const isJson = res.headers.get('content-type')?.includes('application/json');
+  const data = isJson ? await res.json() : null;
+
   if (res.status === 401) {
     if (!location.pathname.endsWith('/index.html') && location.pathname !== '/') {
       location.href = '/index.html';
     }
-    throw new Error('Não autenticado.');
+    // Repassa a mensagem do servidor — no login é ela que diz se foi o
+    // e-mail ou a senha que errou.
+    throw new Error((data && data.error) || 'Não autenticado.');
   }
-
-  const isJson = res.headers.get('content-type')?.includes('application/json');
-  const data = isJson ? await res.json() : null;
 
   if (!res.ok) {
     const message = (data && data.error) || `Erro (${res.status}).`;

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Contro Vend — Recuperar senha</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="login-wrap">
+    <form id="forgot-form" class="card login-card">
+      <div class="brand-mark" aria-hidden="true">CV</div>
+      <h1>Recuperar senha</h1>
+      <p class="muted">Informe o e-mail da sua conta para escolher uma nova senha.</p>
+
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required maxlength="255" />
+
+      <button type="submit">Continuar</button>
+      <p id="forgot-msg" class="success" role="status" hidden></p>
+
+      <div class="login-links">
+        <a href="/index.html" class="link-action">Voltar para o login</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/forgot-password.js"></script>
+</body>
+</html>

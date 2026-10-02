@@ -3,7 +3,7 @@ const { z } = require('zod');
 const prisma = require('../db');
 const validate = require('../validate');
 const { authenticate, authorize } = require('../auth');
-const { parseDateParam, parseEnumParam } = require('../queryHelpers');
+const { parseDateParam, parseEnumParam, clampIntParam } = require('../queryHelpers');
 const { applyStockDelta } = require('../stockOps');
 
 const router = express.Router();
@@ -87,26 +87,43 @@ router.get('/movements', async (req, res) => {
   if (from) where.createdAt.gte = from;
   if (to) where.createdAt.lte = to;
 
-  const movements = await prisma.stockMovement.findMany({
-    where,
-    include: { product: { select: { name: true } }, user: { select: { name: true } } },
-    orderBy: { createdAt: 'desc' },
-    take: 200,
+  const include = { product: { select: { name: true } }, user: { select: { name: true } } };
+  const serialize = (m) => ({
+    id: m.id,
+    product: m.product.name,
+    type: m.type,
+    quantity: Number(m.quantity),
+    previousStock: Number(m.previousStock),
+    newStock: Number(m.newStock),
+    reason: m.reason,
+    user: m.user.name,
+    createdAt: m.createdAt,
   });
 
-  res.json(
-    movements.map((m) => ({
-      id: m.id,
-      product: m.product.name,
-      type: m.type,
-      quantity: Number(m.quantity),
-      previousStock: Number(m.previousStock),
-      newStock: Number(m.newStock),
-      reason: m.reason,
-      user: m.user.name,
-      createdAt: m.createdAt,
-    })),
-  );
+  const paginated = req.query.page !== undefined || req.query.pageSize !== undefined;
+  if (!paginated) {
+    const movements = await prisma.stockMovement.findMany({
+      where,
+      include,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return res.json(movements.map(serialize));
+  }
+
+  const page = clampIntParam(req.query.page, { min: 1, max: 1_000_000, fallback: 1 });
+  const pageSize = clampIntParam(req.query.pageSize, { min: 1, max: 100, fallback: 20 });
+  const [movements, totalCount] = await Promise.all([
+    prisma.stockMovement.findMany({
+      where,
+      include,
+      orderBy: { createdAt: 'desc' },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+    }),
+    prisma.stockMovement.count({ where }),
+  ]);
+  res.json({ totalCount, page, pageSize, movements: movements.map(serialize) });
 });
 
 module.exports = router;

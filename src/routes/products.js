@@ -4,6 +4,7 @@ const prisma = require('../db');
 const validate = require('../validate');
 const httpError = require('../httpError');
 const { authenticate, authorize } = require('../auth');
+const { clampIntParam } = require('../queryHelpers');
 
 const router = express.Router();
 router.use(authenticate);
@@ -68,10 +69,32 @@ router.get('/', async (req, res) => {
   if (query) where.name = { contains: String(query), mode: 'insensitive' };
   if (category) where.category = String(category);
 
-  const products = await prisma.product.findMany({ where, orderBy: { name: 'asc' } });
-  let result = products.map((p) => serializeProduct(p, req.user.role));
-  if (lowStock === 'true') result = result.filter((p) => p.currentStock <= p.minStock);
-  res.json(result);
+  const paginated = req.query.page !== undefined || req.query.pageSize !== undefined;
+  const page = clampIntParam(req.query.page, { min: 1, max: 1_000_000, fallback: 1 });
+  const pageSize = clampIntParam(req.query.pageSize, { min: 1, max: 100, fallback: 20 });
+
+  // Prisma não compara coluna com coluna (estoque <= mínimo) no where.
+  // Com lowStock, filtra em memória e pagina o resultado; sem ele, skip/take no banco.
+  if (!paginated || lowStock === 'true') {
+    const products = await prisma.product.findMany({ where, orderBy: { name: 'asc' } });
+    let result = products.map((p) => serializeProduct(p, req.user.role));
+    if (lowStock === 'true') result = result.filter((p) => p.currentStock <= p.minStock);
+    if (!paginated) return res.json(result);
+    const totalCount = result.length;
+    const pageItems = result.slice((page - 1) * pageSize, page * pageSize);
+    return res.json({ totalCount, page, pageSize, products: pageItems });
+  }
+
+  const [products, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+    }),
+    prisma.product.count({ where }),
+  ]);
+  res.json({ totalCount, page, pageSize, products: products.map((p) => serializeProduct(p, req.user.role)) });
 });
 
 router.get('/:id', async (req, res) => {

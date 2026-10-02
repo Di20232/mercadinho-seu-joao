@@ -130,12 +130,11 @@ Isso também reativa a conta, caso tenha sido desativada por engano.
 - **SQL Injection**: todo acesso ao banco passa pelo Prisma com parâmetros tipados; não há concatenação de string em nenhuma query.
 - **XSS**: o frontend nunca usa `innerHTML` com dados vindos do servidor — toda renderização usa `textContent`/`createElement`.
 - **Autorização**: cada rota checa o papel do usuário no servidor (não só esconde botões na tela) — testado explicitamente: um usuário "caixa" recebe `403` ao chamar a API de usuários e nunca recebe o preço de custo dos produtos na resposta.
-- **Força bruta**: login limitado a 10 tentativas a cada 15 minutos por IP; mensagem de erro genérica (não revela se o e-mail existe).
+- **Força bruta**: login limitado a 10 tentativas a cada 15 minutos por IP. O erro diz se foi o login (e-mail) ou a senha que errou — escolha de usabilidade que, em troca, revela se um e-mail está cadastrado.
 - **Condição de corrida no estoque**: toda operação que soma/subtrai do estoque (venda, entrada de compra, ajuste/perda, cancelamento de venda) usa um `UPDATE` condicional atômico (`WHERE estoque` dentro dos limites) via `src/stockOps.js`, nunca "ler em JS e escrever de volta um valor absoluto" — requisições simultâneas para o mesmo produto nunca se perdem ou deixam o estoque negativo/acima do limite.
 - **Exclusão de produtos/usuários**: é lógica (campo `active`), nunca física — preserva o histórico de vendas para relatórios e auditoria.
 - **Erros**: mensagens de erro internas nunca vazam para o cliente (log no servidor, resposta genérica ao usuário).
 - **Segredos**: `.env` nunca é versionado (`.gitignore`); a aplicação recusa subir em produção com `JWT_SECRET` fraco/ausente, e força cookie `Secure` em produção independentemente do `.env`.
-- **Login sem oráculo de tempo**: o servidor gasta o mesmo tempo de CPU (bcrypt) tanto para e-mail inexistente quanto para senha errada, para não permitir enumerar contas cadastradas medindo a velocidade da resposta.
 - **JWT com algoritmo fixo**: `HS256` é exigido explicitamente na verificação (não inferido), fechando qualquer brecha de ataque de confusão de algoritmo.
 - **Filtros de busca validados**: parâmetros de data/enum em consultas (relatórios, histórico de estoque, vendas) são validados antes de chegar ao banco — entrada inválida vira um erro `400` claro, nunca um `500` genérico.
 - **Limites contra estouro numérico**: o total de uma venda e o estoque resultante de uma entrada/ajuste têm um teto de segurança checado em código, para nunca esbarrar no limite de precisão das colunas do banco.
