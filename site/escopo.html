@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escopo · Estoque do Seu João</title>
+<meta name="description" content="O que entra e o que fica de fora do sistema de estoque do Seu João, e como o dia funciona no sistema.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html">Início</a>
+      <a href="escopo.html" aria-current="page">Escopo</a>
+      <a href="previsao.html">Previsão</a>
+      <a href="telas.html">Telas</a>
+      <a href="tecnico.html">Dados e tecnologia</a>
+      <a href="equipe.html">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <header class="page-head">
+    <span class="kicker">Escopo</span>
+    <h1>O que entra e o que fica de fora</h1>
+    <p class="lead">Com 4 estudantes e prazo curto, o escopo precisa caber. O grupo já decidiu o que não será feito.</p>
+  </header>
+
+  <section class="flush" id="escopo">
+    <div class="cols">
+      <div class="box"><h3>Entra no sistema</h3><ul><li>Cadastro de produtos e categorias</li><li>Entrada de mercadoria, com validade</li><li>Saída por venda, perda ou vencimento</li><li>Alerta de produto perto de vencer</li><li>Alerta de produto perto de acabar</li><li>Sugestão de compra: quando e quanto</li></ul></div>
+      <div class="box out"><h3>Fica de fora</h3><ul><li><b>PDV (caixa):</b> o sistema não vai ser o caixa da loja.</li><li><b>Cadastro de clientes:</b> não é necessário para o estoque.</li></ul></div>
+    </div>
+    <p class="note" id="atencao"><b>Ponto de atenção:</b> sem PDV, as vendas não chegam sozinhas ao sistema, e a previsão depende delas. A saída precisa ser registrada com muito poucos toques, por exemplo uma tela de "Fechar o dia" onde se informa o total vendido de cada produto. Se essa tela for chata, o histórico fica vazio e a previsão perde o valor.</p>
+  </section>
+
+  <section id="fluxo">
+    <h2>Como o dia funciona no sistema</h2>
+    <p class="lead">Entradas e saídas alimentam o estoque. A previsão lê as duas.</p>
+    <div class="flow">
+      <div class="flow-group">
+        <span class="flow-label">Movimentos do dia</span>
+        <div class="lane"><span class="node">Chega mercadoria</span><span class="arr" aria-hidden="true"></span><span class="node act">Registrar entrada<small>produto, quantidade, validade</small></span></div>
+        <div class="lane"><span class="node">Dia de vendas</span><span class="arr" aria-hidden="true"></span><span class="node act">Fechar o dia<small>quanto saiu de cada produto</small></span></div>
+        <div class="lane"><span class="node">Perda ou vencimento</span><span class="arr" aria-hidden="true"></span><span class="node act">Registrar perda</span></div>
+      </div>
+      <span class="arr" aria-hidden="true"></span>
+      <div class="node db">Estoque</div>
+      <span class="arr" aria-hidden="true"></span>
+      <div class="node decision">Previsão</div>
+      <span class="arr" aria-hidden="true"></span>
+      <div class="flow-group">
+        <span class="flow-label">O que o sistema avisa</span>
+        <div class="node out"><span class="pill bad">vai vencer</span>Alerta de validade</div>
+        <div class="node out"><span class="pill warn">vai acabar</span>Alerta de falta</div>
+        <div class="node out"><span class="pill ok">compra</span>Lista: o que comprar e quanto</div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="pager" aria-label="Navegação entre páginas">
+    <a class="prev" href="index.html"><small>← Anterior</small>Início</a>
+    <a class="next" href="previsao.html"><small>Próxima →</small>Previsão de compra</a>
+  </nav>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

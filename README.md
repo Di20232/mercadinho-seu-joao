@@ -4,6 +4,8 @@ Sistema web de controle de vendas e estoque para pequeno comerciante (mercadinho
 
 📖 **[Documentação técnica completa](DOCUMENTATION.md)** — stack tecnológica, arquitetura, modelo de dados, perfis de acesso e detalhamento de cada funcionalidade. Este README cobre o dia a dia: instalar, rodar, publicar e as decisões de segurança.
 
+🌐 **[Site do projeto](site/)**: apresentação da proposta "Estoque do Seu João" (problema, escopo, previsão de compra com simulador, telas, modelo de dados, tecnologia e equipe). Veja a seção [Site do projeto](#site-do-projeto) para abrir e publicar.
+
 ## O que o sistema faz
 
 - **Vendas**: tela de caixa (busca produto por nome/código de barras, monta o carrinho, confirma a venda). Cada venda desconta o estoque automaticamente.
@@ -98,6 +100,27 @@ Cadastrar centenas de produtos à mão é o maior obstáculo para começar a usa
 - Código de barras repetido dentro do próprio arquivo é barrado, para não cadastrar o mesmo produto duas vezes nem contar a mesma entrada de estoque em dobro.
 - Cada linha é gravada na sua própria transação: uma linha problemática no meio do arquivo não descarta as que já passaram, e o resultado final aponta exatamente quais falharam e por quê.
 - Limite de 1.000 linhas e 5 MB por importação; a rota é exclusiva do administrador.
+
+## Site do projeto
+
+A pasta [`site/`](site/) é o site de apresentação da proposta, feito a partir da página de aprovação do grupo. É HTML/CSS/JS puro, sem build e sem depender do backend, então funciona em qualquer hospedagem de arquivos estáticos.
+
+| Página | Conteúdo |
+|---|---|
+| `index.html` | Início: o problema do mercadinho e o que o sistema precisa fazer |
+| `escopo.html` | O que entra e o que fica de fora, e o fluxo do dia no sistema |
+| `previsao.html` | A conta da previsão de compra, com simulador interativo |
+| `telas.html` | Rascunho das três telas principais |
+| `tecnico.html` | Modelo de dados (5 tabelas) e as opções de backend |
+| `equipe.html` | Divisão entre os 4 integrantes e o que falta decidir |
+
+Para ver no computador, abra `site/index.html` no navegador ou sirva a pasta:
+
+```bash
+npx serve site
+```
+
+Para publicar, envie a pasta `site/` para qualquer hospedagem estática (GitHub Pages, Netlify, Vercel). No GitHub Pages, repositório privado exige plano pago ou o GitHub Education.
 
 ## Publicando na nuvem (exemplo: Render, Railway ou similar)
 

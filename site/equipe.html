@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Equipe · Estoque do Seu João</title>
+<meta name="description" content="Como o trabalho do sistema de estoque do Seu João se divide entre os 4 integrantes do grupo.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html">Início</a>
+      <a href="escopo.html">Escopo</a>
+      <a href="previsao.html">Previsão</a>
+      <a href="telas.html">Telas</a>
+      <a href="tecnico.html">Dados e tecnologia</a>
+      <a href="equipe.html" aria-current="page">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <header class="page-head">
+    <span class="kicker">Equipe</span>
+    <h1>Divisão sugerida entre os 4</h1>
+    <p class="lead">Cada pessoa tem uma frente, e todas se encontram nas entregas de sexta.</p>
+    <div class="chips"><span class="chip tag">Prazo final 30/09/2026</span><span class="chip">Entrega parcial toda sexta</span></div>
+  </header>
+
+  <section class="flush" id="frentes">
+    <div class="team">
+      <div class="box"><h3>1 · Dados</h3><p>Modelo ER, criação das tabelas e carga de produtos de exemplo.</p></div>
+      <div class="box"><h3>2 · Telas e fluxos</h3><p>Protótipos das telas, textos simples e teste com alguém de fora do grupo.</p></div>
+      <div class="box"><h3>3 · Previsão</h3><p>Cálculo da média, dias de estoque, quantidade sugerida e alertas de validade.</p></div>
+      <div class="box"><h3>4 · Documentação</h3><p>Texto de aprovação, diagramas, apresentação e controle das entregas de sexta.</p></div>
+    </div>
+  </section>
+
+  <section id="decisoes">
+    <h2>O que ainda falta decidir</h2>
+    <p class="lead">Três pontos da proposta ainda estão em aberto.</p>
+    <div class="box">
+      <ul class="todo">
+        <li><a href="tecnico.html#tecnologia">Escolher o backend</a><span>Entre Flask, Express ou um serviço pronto, vale o que pelo menos dois integrantes já usaram.</span></li>
+        <li><a href="escopo.html#atencao">Desenhar a tela "Fechar o dia"</a><span>Sem PDV, é dela que vem o histórico de vendas. Precisa de muito poucos toques.</span></li>
+        <li><a href="previsao.html#simular">Validar a média simples</a><span>Peso maior para os últimos 7 dias, dia da semana e sazonalidade só entram depois disso.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <nav class="pager" aria-label="Navegação entre páginas">
+    <a class="prev" href="tecnico.html"><small>← Anterior</small>Dados e tecnologia</a>
+    <a class="next" href="index.html"><small>Voltar ao início →</small>Início</a>
+  </nav>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

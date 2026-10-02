@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Telas · Estoque do Seu João</title>
+<meta name="description" content="Rascunho das três telas principais do sistema de estoque, pensadas para a família do Seu João.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html">Início</a>
+      <a href="escopo.html">Escopo</a>
+      <a href="previsao.html">Previsão</a>
+      <a href="telas.html" aria-current="page">Telas</a>
+      <a href="tecnico.html">Dados e tecnologia</a>
+      <a href="equipe.html">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <header class="page-head">
+    <span class="kicker">Telas</span>
+    <h1>As telas, pensadas para a família</h1>
+    <p class="lead">Rascunho de três telas principais. Textos do dia a dia, botões grandes, cor para dizer o que precisa de atenção.</p>
+    <div class="chips"><span class="chip">Poucos cliques</span><span class="chip">Botões grandes</span><span class="chip">Textos claros</span><span class="chip">Nenhum termo técnico</span></div>
+  </header>
+
+  <section class="flush" id="telas">
+    <div class="screens">
+      <div><div class="phone">
+        <div class="bar">Hoje na loja</div>
+        <div class="row"><b>Vencem em 3 dias</b><span class="pill bad">2 itens</span></div>
+        <div class="row"><b>Estão acabando</b><span class="pill warn">5 itens</span></div>
+        <div class="row"><b>Comprar esta semana</b><span class="pill ok">8 itens</span></div>
+        <div class="row">Iogurte natural<span class="pill bad">vence quinta</span></div>
+        <div class="row">Leite 1L<span class="pill warn">acaba em 4 dias</span></div>
+        <span class="btn">Chegou mercadoria</span><span class="btn alt">Fechar o dia</span>
+      </div><div class="cap">Tela inicial</div></div>
+      <div><div class="phone">
+        <div class="bar">Chegou mercadoria</div>
+        <div class="row"><b>Produto</b><span>Leite integral 1L</span></div>
+        <div class="row"><b>Quantidade</b><span>24</span></div>
+        <div class="row"><b>Vence em</b><span>15/11/2026</span></div>
+        <div class="row"><b>Pagou</b><span>R$ 3,80 cada</span></div>
+        <span class="btn push">Guardar</span>
+      </div><div class="cap">Entrada de mercadoria</div></div>
+      <div><div class="phone">
+        <div class="bar">O que comprar</div>
+        <div class="row"><b>Leite 1L</b><span class="pill bad">comprar já · 19</span></div>
+        <div class="row"><b>Arroz 5kg</b><span class="pill warn">esta semana · 12</span></div>
+        <div class="row"><b>Óleo 900ml</b><span class="pill ok">sobra · 0</span></div>
+        <div class="row"><b>Iogurte</b><span class="pill ok">pouco · 6</span></div>
+        <span class="btn alt push">Ver lista para o fornecedor</span>
+      </div><div class="cap">Previsão de compra</div></div>
+    </div>
+  </section>
+
+  <nav class="pager" aria-label="Navegação entre páginas">
+    <a class="prev" href="previsao.html"><small>← Anterior</small>Previsão de compra</a>
+    <a class="next" href="tecnico.html"><small>Próxima →</small>Dados e tecnologia</a>
+  </nav>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

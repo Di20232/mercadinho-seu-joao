@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estoque do Seu João</title>
+<meta name="description" content="Sistema simples de controle de estoque para o mercadinho da família do Seu João: guarda o que entra e o que sai, avisa o que vai vencer e diz quando e quanto comprar.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html" aria-current="page">Início</a>
+      <a href="escopo.html">Escopo</a>
+      <a href="previsao.html">Previsão</a>
+      <a href="telas.html">Telas</a>
+      <a href="tecnico.html">Dados e tecnologia</a>
+      <a href="equipe.html">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <span class="kicker">Projeto em grupo · Faculdade Impacta · fase de aprovação</span>
+      <h1>Comprar o que vende. Não deixar estragar.</h1>
+      <p>Um sistema simples de controle de estoque para o mercadinho da família do Seu João. Ele guarda o que entra e o que sai, avisa o que vai vencer e diz quando e quanto comprar.</p>
+      <div class="chips"><span class="chip tag">Prazo final 30/09/2026</span><span class="chip">4 integrantes</span><span class="chip">Entrega parcial toda sexta</span></div>
+      <div class="actions"><a class="cta" href="previsao.html">Testar a previsão de compra</a><a class="cta ghost" href="escopo.html">Ver o escopo</a></div>
+    </div>
+    <div class="prancheta" role="img" aria-label="Como o estoque é controlado hoje: leite caixa, uns 30; arroz 5kg, faltou, riscado, sobrou; iogurte venceu sexta; óleo no olho.">
+      <b>COMO É HOJE</b>
+      <div>Leite caixa ~ "uns 30"</div>
+      <div>Arroz 5kg ~ <span class="x">faltou</span> sobrou</div>
+      <div>Iogurte ~ venceu sexta</div>
+      <div>Óleo ~ "no olho"</div>
+    </div>
+  </div>
+
+  <section id="problema">
+    <h2>O problema do mercadinho</h2>
+    <p class="lead">A loja é tocada pelo Seu João, pela esposa e pelo sobrinho. O estoque fica na prancheta, no papel, sem planilha.</p>
+    <div class="grid">
+      <div class="item"><span class="n">HOJE</span><h3>Estoque no olhômetro</h3><p>Ninguém sabe ao certo quanto tem de cada produto nem quando a validade vence.</p></div>
+      <div class="item"><span class="n">CONSEQUÊNCIA</span><h3>Compra mais do que vende</h3><p>Sem histórico de vendas, a compra é por impressão. O excesso fica na prateleira.</p></div>
+      <div class="item"><span class="n">RESULTADO</span><h3>Mercadoria estraga</h3><p>Produto vencido vira prejuízo direto no caixa do mercadinho.</p></div>
+    </div>
+    <div class="cols">
+      <div class="box"><h3>O que o sistema precisa fazer</h3><ul><li><b>Controle de estoque:</b> produtos, entradas, saídas e validade.</li><li><b>Previsão de compra:</b> cruzar estoque com vendas para dizer quando cada produto acaba e quanto comprar.</li></ul></div>
+      <div class="box"><h3>Quem vai usar</h3><p class="muted">Pessoas com pouca familiaridade com tecnologia. Por isso cada tela tem poucos cliques, botões grandes, textos claros e nenhum termo técnico.</p></div>
+    </div>
+  </section>
+
+  <section id="explorar">
+    <h2>Conheça o projeto</h2>
+    <p class="lead">Cada página cobre uma parte da proposta. Siga na ordem ou vá direto ao que interessa.</p>
+    <div class="cards">
+      <a class="card-link" href="escopo.html"><span class="n">ESCOPO</span><h3>O que entra e o que fica de fora</h3><p>As funções do sistema, o que o grupo decidiu não fazer e como o dia funciona no sistema.</p><span class="go">Abrir página →</span></a>
+      <a class="card-link" href="previsao.html"><span class="n">PREVISÃO</span><h3>Quando e quanto comprar</h3><p>A conta da média de vendas por dia, explicada em quatro passos, com um simulador para testar.</p><span class="go">Abrir página →</span></a>
+      <a class="card-link" href="telas.html"><span class="n">TELAS</span><h3>Pensadas para a família</h3><p>Rascunho das três telas principais, com botões grandes e textos do dia a dia.</p><span class="go">Abrir página →</span></a>
+      <a class="card-link" href="tecnico.html"><span class="n">DADOS E TECNOLOGIA</span><h3>Cinco tabelas, três caminhos</h3><p>O modelo de dados e as opções de backend que o grupo está avaliando.</p><span class="go">Abrir página →</span></a>
+      <a class="card-link" href="equipe.html"><span class="n">EQUIPE</span><h3>Quem faz o quê</h3><p>As quatro frentes de trabalho e o que ainda falta decidir.</p><span class="go">Abrir página →</span></a>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

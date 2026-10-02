@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Previsão de compra · Estoque do Seu João</title>
+<meta name="description" content="Como o sistema calcula quando e quanto comprar, com um simulador para testar a conta.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html">Início</a>
+      <a href="escopo.html">Escopo</a>
+      <a href="previsao.html" aria-current="page">Previsão</a>
+      <a href="telas.html">Telas</a>
+      <a href="tecnico.html">Dados e tecnologia</a>
+      <a href="equipe.html">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <header class="page-head">
+    <span class="kicker">Previsão de compra</span>
+    <h1>Como a previsão de compra funciona</h1>
+    <p class="lead">Começamos pela conta mais simples que funciona: a média de vendas por dia. Dá para explicar ao Seu João em uma frase.</p>
+  </header>
+
+  <section class="flush" id="conta">
+    <ol class="steps">
+      <li><div><b>Média por dia</b> = unidades vendidas nos últimos 30 dias ÷ 30.</div></li>
+      <li><div><b>Dias de estoque</b> = quantidade em estoque ÷ média por dia.</div></li>
+      <li><div><b>Hora de comprar</b> quando os dias de estoque forem menores ou iguais ao prazo do fornecedor mais uma folga.</div></li>
+      <li><div><b>Quanto comprar</b> = média por dia × dias que se quer cobrir − estoque. A cobertura nunca passa da validade, para não comprar o que vai vencer antes de vender.</div></li>
+    </ol>
+  </section>
+
+  <section id="simular">
+    <h2>Teste a conta</h2>
+    <p class="lead">Valores de exemplo, não são dados reais da loja. Mude os números e veja a resposta.</p>
+    <div class="sim">
+      <form id="simulador" novalidate>
+        <label for="prod">Produto<select id="prod"><option value="leite">Leite integral 1L (caixa c/ 12)</option><option value="arroz">Arroz 5kg (pacote)</option><option value="iogurte">Iogurte natural (unidade)</option></select></label>
+        <label for="est">Em estoque agora<small>unidades</small><input id="est" type="number" min="0" inputmode="numeric" value="30"></label>
+        <label for="vend">Vendido nos últimos 30 dias<small>unidades</small><input id="vend" type="number" min="0" inputmode="numeric" value="210"></label>
+        <label for="prazo">Fornecedor entrega em<small>dias</small><input id="prazo" type="number" min="0" inputmode="numeric" value="2"></label>
+        <label for="cob">Quero cobrir quantos dias de venda<small>dias</small><input id="cob" type="number" min="1" inputmode="numeric" value="7"></label>
+        <label for="val">Validade do que está na prateleira<small>dias que faltam para vencer</small><input id="val" type="number" min="0" inputmode="numeric" value="45"></label>
+      </form>
+      <div class="res" aria-live="polite">
+        <span id="pill" class="pill ok">...</span>
+        <div class="big" id="dias">...</div>
+        <p id="msg"></p>
+        <dl><dt>Vende por dia</dt><dd id="media"></dd><dt>Acaba em</dt><dd id="acaba"></dd><dt>Comprar quantas</dt><dd id="qtd"></dd></dl>
+      </div>
+    </div>
+    <p class="note soft"><b>Depois, se der tempo:</b> pesar mais os últimos 7 dias, considerar dia da semana (fim de semana vende mais) e sazonalidade. Isso só entra depois que a média simples estiver funcionando e validada.</p>
+  </section>
+
+  <nav class="pager" aria-label="Navegação entre páginas">
+    <a class="prev" href="escopo.html"><small>← Anterior</small>Escopo</a>
+    <a class="next" href="telas.html"><small>Próxima →</small>Telas</a>
+  </nav>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+<script src="assets/previsao.js"></script>
+</body>
+</html>
