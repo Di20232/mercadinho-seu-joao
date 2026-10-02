@@ -103,7 +103,7 @@ router.post('/', validate(saleSchema), async (req, res) => {
     return tx.sale.update({
       where: { id: created.id },
       data: { totalAmount: total.toFixed(2) },
-      include: { items: true },
+      include: { items: { include: { product: { select: { name: true, unit: true } } } } },
     });
   }, { timeout: 15_000, maxWait: 5_000 });
   // Timeout maior que o padrão do Prisma (5s): uma venda com até 100 itens faz
@@ -114,7 +114,14 @@ router.post('/', validate(saleSchema), async (req, res) => {
     id: sale.id,
     totalAmount: Number(sale.totalAmount),
     createdAt: sale.createdAt,
-    items: sale.items.length,
+    itemCount: sale.items.length,
+    items: sale.items.map((i) => ({
+      product: i.product.name,
+      unit: i.product.unit,
+      quantity: Number(i.quantity),
+      unitPrice: Number(i.unitPrice),
+      subtotal: Number(i.subtotal),
+    })),
   });
 });
 

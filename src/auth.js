@@ -15,15 +15,8 @@ function verifyPassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-// Hash "isca" gerado uma única vez na subida do processo. Usado para que o
-// login gaste sempre o mesmo tempo de CPU (o custo do bcrypt.compare) tanto
-// para e-mail inexistente quanto para senha errada — sem isso, responder
-// mais rápido quando o e-mail não existe vira um oráculo de tempo que permite
-// a um atacante descobrir quais e-mails estão cadastrados no sistema.
-const DUMMY_HASH_PROMISE = bcrypt.hash('senha-isca-para-comparacao-de-tempo-constante', 12);
-
 function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, {
+  return jwt.sign({ sub: user.id, role: user.role, sv: user.sessionVersion }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
     algorithm: JWT_ALGORITHM,
   });
@@ -62,9 +55,15 @@ async function authenticate(req, res, next) {
   // desprezível para o volume de um sistema desse porte.
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, role: true, active: true },
+    select: { id: true, role: true, active: true, sessionVersion: true },
   });
   if (!user || !user.active) {
+    return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
+  }
+  // sv (sessionVersion) no JWT é incrementado a cada troca de senha. Se
+  // divergir, é um cookie roubado (ou de uma sessão pré-reset) e precisa ser
+  // invalidado — é assim que o reset derruba sessões existentes.
+  if (payload.sv !== user.sessionVersion) {
     return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
   }
 
@@ -96,7 +95,6 @@ function requireFetchHeader(req, res, next) {
 
 module.exports = {
   COOKIE_NAME,
-  DUMMY_HASH_PROMISE,
   hashPassword,
   verifyPassword,
   signToken,

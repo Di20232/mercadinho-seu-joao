@@ -75,7 +75,7 @@ Primeira tela ao entrar no sistema — resume, num único lugar: estoque abaixo 
 
 ### 2.9 Gestão de usuários (administrador)
 
-Cadastro de novos usuários (nome, e-mail, senha, perfil), edição de nome/perfil/status ativo, e redefinição de senha de outro usuário. Um administrador não pode se autodesativar nem se autorrebaixar (trava contra ficar acidentalmente trancado fora do próprio sistema).
+O sistema tem um único administrador (o dono); toda outra conta é funcionário (caixa), seja criada pelo administrador ou pelo auto-cadastro na tela de login — o perfil não é escolhido nem editável. O administrador cadastra novos usuários (nome, e-mail, senha), edita nome/status ativo e redefine a senha de outro usuário. Ele não pode se autodesativar (trava contra ficar acidentalmente trancado fora do próprio sistema).
 
 ## 3. Stack tecnológica
 

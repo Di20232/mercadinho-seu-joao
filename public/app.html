@@ -98,6 +98,7 @@
           <thead><tr><th>Nome</th><th>Categoria</th><th>Estoque</th><th>Mín.</th><th>Preço</th><th data-admin-only>Custo</th><th>Validade</th><th></th></tr></thead>
           <tbody id="products-list"></tbody>
         </table></div>
+        <div id="products-pager" class="pager" hidden></div>
       </div>
     </section>
   </template>
@@ -155,8 +156,25 @@
           <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Estoque resultante</th><th>Motivo</th><th>Usuário</th></tr></thead>
           <tbody id="movements-list"></tbody>
         </table></div>
+        <div id="movements-pager" class="pager" hidden></div>
       </div>
     </section>
+  </template>
+
+  <template id="tpl-receipt">
+    <div class="card receipt-card" id="receipt-card">
+      <h3>Venda confirmada</h3>
+      <p class="muted" id="receipt-meta"></p>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Subtotal</th></tr></thead>
+        <tbody id="receipt-items"></tbody>
+      </table></div>
+      <p class="cart-total">Total: <strong id="receipt-total">R$ 0,00</strong></p>
+      <div class="form-actions no-print">
+        <button type="button" id="receipt-print-btn">Imprimir</button>
+        <button type="button" id="receipt-close-btn" class="secondary">Nova venda</button>
+      </div>
+    </div>
   </template>
 
   <template id="tpl-importar">
@@ -299,8 +317,6 @@
       <input type="hidden" id="u-id" />
       <label for="u-name">Nome</label><input id="u-name" required maxlength="120" />
       <label id="u-email-label" for="u-email">E-mail</label><input id="u-email" type="email" required maxlength="255" />
-      <label for="u-role">Perfil</label>
-      <select id="u-role"><option value="CASHIER">Funcionário (caixa)</option><option value="ADMIN">Administrador</option></select>
       <label id="u-active-label" for="u-active">Ativo</label><input id="u-active" type="checkbox" checked />
       <label id="u-password-label" for="u-password">Senha</label><input id="u-password" type="password" minlength="8" maxlength="200" />
       <div class="form-actions">

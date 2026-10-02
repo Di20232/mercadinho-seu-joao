@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contro Vend — Cadastro</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="login-wrap">
+    <form id="register-form" class="card login-card">
+      <div class="brand-mark" aria-hidden="true">CV</div>
+      <h1>Criar conta</h1>
+      <p class="muted">Sua conta será criada como funcionário (caixa) e você já entra no sistema em seguida.</p>
+
+      <label for="name">Nome</label>
+      <input id="name" name="name" type="text" autocomplete="name" required maxlength="120" />
+
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required maxlength="255" />
+
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="200" />
+
+      <label for="confirm">Confirme a senha</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" required minlength="8" maxlength="200" />
+
+      <button type="submit">Cadastrar</button>
+      <p id="register-msg" class="error" role="alert" hidden></p>
+
+      <div class="login-links">
+        <a href="/index.html" class="link-action">Voltar para o login</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/cadastro.js"></script>
+</body>
+</html>

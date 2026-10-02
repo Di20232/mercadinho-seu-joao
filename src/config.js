@@ -54,6 +54,14 @@ const config = {
   expiryAlertDays: intEnv('EXPIRY_ALERT_DAYS', 7),
   lowStockAlertHour: Math.min(Math.max(intEnv('LOW_STOCK_ALERT_HOUR', 8, 0), 0), 23),
 
+  // URL base do app, usada para montar o link de reset de senha. Lida do .env
+  // em vez de req.headers.host para evitar host header injection — um atacante
+  // que controle o cabeçalho Host faria o e-mail/link apontar para domínio dele.
+  appBaseUrl: (process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, ''),
+  // Validade do token de reset (em minutos). 30 min equilibra tempo razoável
+  // para o usuário digitar a nova senha com janela pequena de abuso.
+  passwordResetExpiresMin: intEnv('PASSWORD_RESET_EXPIRES_MIN', 30, 1),
+
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: intEnv('SMTP_PORT', 587),

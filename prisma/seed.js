@@ -10,6 +10,13 @@ async function main() {
     throw new Error('Defina ADMIN_EMAIL no .env antes de rodar o seed.');
   }
 
+  // O sistema tem um único administrador: se já existe um, o seed não cria outro.
+  const existingAdmin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+  if (existingAdmin) {
+    console.log(`Já existe um administrador (${existingAdmin.email}). Nada a fazer.`);
+    return;
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     console.log(`Usuário administrador já existe (${email}). Nada a fazer.`);
