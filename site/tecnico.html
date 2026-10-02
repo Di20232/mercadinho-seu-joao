@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dados e tecnologia · Estoque do Seu João</title>
+<meta name="description" content="Modelo de dados do sistema de estoque do Seu João e as opções de backend avaliadas pelo grupo.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+  <div class="wrap top">
+    <a class="brand" href="index.html">Estoque do Seu João <i>Impacta</i></a>
+    <nav class="site-nav" id="menu" aria-label="Páginas do site">
+      <a href="index.html">Início</a>
+      <a href="escopo.html">Escopo</a>
+      <a href="previsao.html">Previsão</a>
+      <a href="telas.html">Telas</a>
+      <a href="tecnico.html" aria-current="page">Dados e tecnologia</a>
+      <a href="equipe.html">Equipe</a>
+    </nav>
+    <button class="icon-btn theme-btn" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<main id="conteudo">
+<div class="wrap">
+  <header class="page-head">
+    <span class="kicker">Dados e tecnologia</span>
+    <h1>Como o sistema guarda e calcula</h1>
+    <p class="lead">O modelo de dados que sustenta o estoque e a previsão, e os caminhos de backend que o grupo está avaliando.</p>
+  </header>
+
+  <section class="flush" id="dados">
+    <h2>Modelo de dados</h2>
+    <p class="lead">Cinco tabelas bastam. O lote guarda a validade, porque o mesmo produto chega várias vezes com datas diferentes.</p>
+    <div class="er">
+      <article class="entity">
+        <h3>CATEGORIA</h3>
+        <ul>
+          <li><code>id</code><span class="key pk">PK</span><span class="t">int</span></li>
+          <li><code>nome</code><span class="t">string</span></li>
+        </ul>
+      </article>
+      <article class="entity">
+        <h3>PRODUTO</h3>
+        <ul>
+          <li><code>id</code><span class="key pk">PK</span><span class="t">int</span></li>
+          <li><code>nome</code><span class="t">string</span></li>
+          <li><code>categoria_id</code><span class="key fk">FK</span><span class="t">int</span></li>
+          <li><code>unidade</code><span class="t">string</span></li>
+          <li><code>estoque_minimo</code><span class="t">int</span></li>
+          <li><code>prazo_fornecedor_dias</code><span class="t">int</span></li>
+          <li><code>preco_venda</code><span class="t">decimal</span></li>
+        </ul>
+      </article>
+      <article class="entity">
+        <h3>LOTE</h3>
+        <ul>
+          <li><code>id</code><span class="key pk">PK</span><span class="t">int</span></li>
+          <li><code>produto_id</code><span class="key fk">FK</span><span class="t">int</span></li>
+          <li><code>quantidade_inicial</code><span class="t">int</span></li>
+          <li><code>data_entrada</code><span class="t">date</span></li>
+          <li><code>validade</code><span class="t">date</span></li>
+          <li><code>custo_unitario</code><span class="t">decimal</span></li>
+        </ul>
+      </article>
+      <article class="entity">
+        <h3>MOVIMENTACAO</h3>
+        <ul>
+          <li><code>id</code><span class="key pk">PK</span><span class="t">int</span></li>
+          <li><code>produto_id</code><span class="key fk">FK</span><span class="t">int</span></li>
+          <li><code>lote_id</code><span class="key fk">FK</span><span class="t">int</span></li>
+          <li><code>usuario_id</code><span class="key fk">FK</span><span class="t">int</span></li>
+          <li><code>tipo</code><span class="t">string</span><span class="hint">ENTRADA, VENDA ou PERDA</span></li>
+          <li><code>quantidade</code><span class="t">int</span></li>
+          <li><code>data</code><span class="t">date</span></li>
+        </ul>
+      </article>
+      <article class="entity">
+        <h3>USUARIO</h3>
+        <ul>
+          <li><code>id</code><span class="key pk">PK</span><span class="t">int</span></li>
+          <li><code>nome</code><span class="t">string</span></li>
+          <li><code>perfil</code><span class="t">string</span></li>
+        </ul>
+      </article>
+      <div class="box">
+        <h3>Relações</h3>
+        <ul class="rels">
+          <li><code>CATEGORIA 1 → N PRODUTO</code><span>a categoria agrupa produtos</span></li>
+          <li><code>PRODUTO 1 → N LOTE</code><span>o produto chega em lotes</span></li>
+          <li><code>PRODUTO 1 → N MOVIMENTACAO</code><span>o produto tem movimentações</span></li>
+          <li><code>LOTE 1 → N MOVIMENTACAO</code><span>o lote origina movimentações</span></li>
+          <li><code>USUARIO 1 → N MOVIMENTACAO</code><span>o usuário registra movimentações</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="box"><h3>Como o estoque é calculado</h3><p class="muted">Estoque do produto = soma das entradas − vendas − perdas. Não existe campo "estoque atual" para ficar desatualizado: o número sai sempre das movimentações.</p></div>
+      <div class="box"><h3>Como a previsão usa os dados</h3><p class="muted">Soma as movimentações do tipo VENDA dos últimos 30 dias de cada produto, divide por 30 e compara com o estoque e com a menor validade dos lotes.</p></div>
+    </div>
+  </section>
+
+  <section id="tecnologia">
+    <h2>Tecnologia: três caminhos possíveis</h2>
+    <p class="lead">O backend ainda não foi escolhido. Todas as opções cabem em um projeto acadêmico. A decisão depende do que o grupo já domina.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Opção</th><th>Pontos fortes</th><th>Pontos de atenção</th></tr></thead>
+      <tbody>
+        <tr><td><b>Python: Flask + SQLAlchemy + SQLite</b></td><td>Banco em um único arquivo, sem servidor. Combina com a matéria de modelagem. Fácil escrever a previsão em Python.</td><td>Telas em HTML/Jinja exigem cuidado para ficarem simples. Hospedar para demonstração dá algum trabalho.</td></tr>
+        <tr><td><b>Node: Express + SQLite</b></td><td>Mesma linguagem no front e no back. Muito material e exemplos.</td><td>Só vale se o grupo já conhece JavaScript no servidor.</td></tr>
+        <tr><td><b>Serviço pronto: Supabase ou Firebase</b></td><td>Banco, login e API já prontos. Rápido para colocar online.</td><td>Menos aprendizado de back-end. Depende de serviço externo e de conta do grupo.</td></tr>
+      </tbody></table></div>
+    <p class="note soft"><b>Para decidir:</b> escolha o que pelo menos dois integrantes já usaram. Em prazo curto, familiaridade vale mais que a tecnologia da moda.</p>
+  </section>
+
+  <nav class="pager" aria-label="Navegação entre páginas">
+    <a class="prev" href="telas.html"><small>← Anterior</small>Telas</a>
+    <a class="next" href="equipe.html"><small>Próxima →</small>Equipe</a>
+  </nav>
+</div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <p><b>Estoque do Seu João</b> · trabalho em grupo, Faculdade Impacta · fase de aprovação.</p>
+    <p>Os números das telas e do simulador são exemplos.</p>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
