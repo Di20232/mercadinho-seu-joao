@@ -41,7 +41,30 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: config.clientOrigin, credentials: true }));
+
+// CORS com allowlist: apenas origens explicitamente configuradas
+const allowedOrigins = new Set(
+  (config.clientOrigin || 'http://localhost:3000')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean),
+);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Requisições sem Origin (server-to-server, health checks) são permitidas
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin não permitida por CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 86400,
+  }),
+);
 // 100kb cobre com folga qualquer requisição normal do app. A importação de
 // planilha é a exceção — a grade lida do arquivo volta ao servidor a cada
 // pré-visualização — então aquele roteador traz o próprio parser, com limite
