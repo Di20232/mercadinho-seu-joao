@@ -1,0 +1,27 @@
+name,barcode,category,costPrice,salePrice,minStock,expiryDate
+Macarrão Penne 500g,MAC001,Alimentos,2.50,4.99,10,2027-06-30
+Molho de Tomate 340g,MOL001,Alimentos,1.80,3.50,15,2027-03-15
+Sal Refinado 1kg,SAL001,Condimentos,0.80,1.99,20,2027-12-31
+Pimenta do Reino 50g,PIM001,Condimentos,3.50,7.99,5,2027-12-31
+Alho Desidratado 50g,ALH001,Condimentos,2.00,4.50,8,2027-12-31
+Cebola Desidratada 50g,CEB001,Condimentos,1.50,3.49,10,2027-12-31
+Biscoito Água e Sal 400g,BIS001,Alimentos,1.20,2.49,15,2026-11-30
+Biscoito Doce Chocolate 200g,BIS002,Alimentos,1.80,3.99,12,2026-11-20
+Leite em Pó Integral 400g,LEI002,Laticínios,5.00,9.99,8,2026-12-15
+Queijo Meia Cura 500g,QUE001,Laticínios,8.00,15.99,5,2026-10-20
+Manteiga com Sal 200g,MAN001,Laticínios,4.50,8.99,6,2026-11-10
+Iogurte Natural 500ml,IOG001,Laticínios,2.50,4.99,10,2026-10-15
+Suco Natural Laranja 1L,SUC001,Bebidas,1.50,2.99,20,2026-10-20
+Refrigerante Guaraná 2L,REF001,Bebidas,3.00,5.99,15,2026-11-30
+Água Mineral 1.5L,AGU001,Bebidas,0.50,1.49,30,2027-12-31
+Cerveja Premium 350ml,CER001,Bebidas,2.00,4.99,10,2026-12-31
+Vinho Tinto Reserva 750ml,VIN001,Bebidas,12.00,24.99,5,2027-06-30
+Chocolate ao Leite 100g,CHO001,Doces,1.50,3.49,15,2026-12-15
+Bala Sortida 500g,BAL001,Doces,3.00,5.99,10,2026-12-31
+Chiclete 5 unidades,CHI001,Doces,0.50,1.29,20,2026-12-31
+Sabonete Neutro 90g,SAB001,Higiene,1.00,1.99,20,2027-06-30
+Shampoo Neutro 400ml,SHA001,Higiene,3.50,6.99,10,2026-12-31
+Condicionador 400ml,CON001,Higiene,3.50,6.99,10,2026-12-31
+Desodorante Aerossol 150ml,DES001,Higiene,4.00,7.99,8,2026-12-31
+Fralda Descartável XG 24un,FRA001,Higiene,15.00,29.99,5,2026-12-31
+Papel Higiênico 4 rolos,PAP001,Higiene,2.50,4.99,20,2027-06-30

@@ -19,6 +19,8 @@ function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role, sv: user.sessionVersion }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
     algorithm: JWT_ALGORITHM,
+    issuer: 'contro-vend-api',
+    audience: 'contro-vend-web',
   });
 }
 
@@ -42,7 +44,11 @@ async function authenticate(req, res, next) {
 
   let payload;
   try {
-    payload = jwt.verify(token, config.jwtSecret, { algorithms: [JWT_ALGORITHM] });
+    payload = jwt.verify(token, config.jwtSecret, {
+      algorithms: [JWT_ALGORITHM],
+      issuer: 'contro-vend-api',
+      audience: 'contro-vend-web',
+    });
   } catch {
     return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
   }

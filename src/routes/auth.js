@@ -128,19 +128,16 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
   res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
 });
 
-// Solicitação de reset. Resposta SEMPRE idêntica, exista ou não o e-mail —
-// anti-enumeração. Como não há SMTP, o link/token é devolvido na própria
+// Solicitação de reset. Como não há SMTP, o link/token é devolvido na própria
 // resposta (e também logado no servidor). Em produção com SMTP configurado,
 // este campo sairia da resposta e o link iria só por e-mail.
 router.post('/forgot-password', forgotLimiter, validate(forgotSchema), async (req, res) => {
   const { email } = req.body;
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
 
-  // Resposta genérica e idêntica para qualquer caso.
-  const generic = { message: 'Se o e-mail estiver cadastrado, as instruções de recuperação foram geradas.' };
-
+  // Mensagem específica se o email não for encontrado
   if (!user || !user.active) {
-    return res.json(generic);
+    return res.status(404).json({ error: 'Você não tem cadastro com esse email verifique ou corrija' });
   }
 
   const rawToken = generateResetToken();
