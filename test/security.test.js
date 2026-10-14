@@ -102,7 +102,7 @@ test('CORS: app.js importa cors corretamente', async () => {
 
   // Verificar que CORS está configurado com allowedOrigins
   assert(appCode.includes('allowedOrigins'), 'app.js deve definir allowedOrigins');
-  assert(appCode.includes('cors({'), 'app.js deve chamar cors()');
+  assert(appCode.includes('cors('), 'app.js deve chamar cors()');
   assert(appCode.includes('origin(origin, callback)'), 'CORS deve ter função origin customizada');
   assert(!appCode.includes("cors({ origin: '*'"), 'CORS não deve usar origin: *');
 });

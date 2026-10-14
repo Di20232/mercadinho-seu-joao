@@ -101,6 +101,18 @@ test('login: aceita o nome de usuário gerado no cadastro', async () => {
   assert.equal(byUsername.body.email, 'joaquim.username@example.com');
 });
 
+test('CORS: a própria página do app passa em qualquer endereço; outro site continua bloqueado', async () => {
+  // baseUrl (127.0.0.1:porta aleatória) não está em CLIENT_ORIGIN — é o caso de
+  // abrir o app por outra porta ou pelo IP da máquina na rede da loja.
+  const sameOrigin = await fetch(`${baseUrl}/api/auth/me`, { headers: { Origin: baseUrl } });
+  assert.equal(sameOrigin.status, 401, 'deveria chegar à rota (sem sessão = 401), não ser barrada pelo CORS');
+  assert.equal(sameOrigin.headers.get('access-control-allow-origin'), baseUrl);
+
+  const otherSite = await fetch(`${baseUrl}/api/auth/me`, { headers: { Origin: 'https://site-de-terceiros.example' } });
+  assert.notEqual(otherSite.status, 401, 'origem de terceiros não pode chegar à rota');
+  assert.equal(otherSite.headers.get('access-control-allow-origin'), null);
+});
+
 test('CSRF: rota que altera estado rejeita requisição sem X-Requested-With', async () => {
   const res = await fetch(`${baseUrl}/api/products`, {
     method: 'POST',

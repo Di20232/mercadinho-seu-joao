@@ -50,19 +50,34 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 );
 
+// A própria página do app chamando a API não é cross-origin, seja qual for o
+// endereço em que ele foi aberto (outra porta, 127.0.0.1, o IP da máquina na
+// rede da loja). O navegador manda Origin mesmo assim em POST, então sem esta
+// checagem o login falhava em qualquer endereço fora de CLIENT_ORIGIN. Um site
+// de terceiros não engana isto: o navegador não deixa a página forjar o Host.
+function isSameOrigin(req, origin) {
+  try {
+    return new URL(origin).host === req.get('host');
+  } catch {
+    return false;
+  }
+}
+
 app.use(
-  cors({
-    origin(origin, callback) {
-      // Requisições sem Origin (server-to-server, health checks) são permitidas
-      if (!origin || allowedOrigins.has(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('Origin não permitida por CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    maxAge: 86400,
+  cors((req, done) => {
+    done(null, {
+      origin(origin, callback) {
+        // Requisições sem Origin (server-to-server, health checks) são permitidas
+        if (!origin || allowedOrigins.has(origin) || isSameOrigin(req, origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error('Origin não permitida por CORS'));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      maxAge: 86400,
+    });
   }),
 );
 // 100kb cobre com folga qualquer requisição normal do app. A importação de
