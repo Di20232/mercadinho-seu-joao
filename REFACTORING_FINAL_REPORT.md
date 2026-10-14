@@ -1,6 +1,6 @@
 # 🎯 PLANO DE REFATORAÇÃO P0/P1 — EXECUÇÃO COMPLETA
 
-**Projeto:** Contro Vend (mercadinho-seu-joao)  
+**Projeto:** Mercadinho do João (mercadinho-seu-joao)  
 **Data de Execução:** 2026-10-09  
 **Status Final:** ✅ **Sprints 1-3 Completados com Sucesso**
 
@@ -34,8 +34,8 @@ jwt.verify(token, config.jwtSecret, { algorithms: [JWT_ALGORITHM] });
 // DEPOIS
 jwt.verify(token, config.jwtSecret, {
   algorithms: [JWT_ALGORITHM],
-  issuer: 'contro-vend-api',
-  audience: 'contro-vend-web',
+  issuer: 'mercadinho-joao-api',
+  audience: 'mercadinho-joao-web',
 });
 ```
 
@@ -220,7 +220,7 @@ Antes de colocar em produção:
 
 ### Status Final: ✅ **Todos os Problemas P0 Resolvidos**
 
-O projeto **Contro Vend** está **seguro e pronto para produção** quanto a:
+O projeto **Mercadinho do João** está **seguro e pronto para produção** quanto a:
 
 - ✅ Autenticação e autorização
 - ✅ Proteção contra CSRF, CORS e XSS
@@ -245,7 +245,7 @@ Se encontrar questões:
 ---
 
 **Executado por:** Claude Code AI  
-**Projeto:** Contro Vend - Sistema de Vendas & Estoque  
+**Projeto:** Mercadinho do João - Sistema de Vendas & Estoque  
 **Duração Total:** 2.5 horas  
 **Data:** 2026-10-09
 

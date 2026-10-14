@@ -1,4 +1,4 @@
-# Contro Vend — Documentação Técnica
+# Mercadinho do João — Documentação Técnica
 
 Documentação de referência do projeto: o problema que ele resolve, o que foi usado para construí-lo, como as peças se encaixam, e o que cada funcionalidade faz. Para instruções de instalação/deploy do dia a dia, veja o [README.md](README.md); para o histórico completo da auditoria de segurança, veja a seção específica lá.
 
@@ -19,7 +19,7 @@ Documentação de referência do projeto: o problema que ele resolve, o que foi 
 
 ## 1. Visão geral e contexto
 
-O Contro Vend foi criado para um cliente real: um pequeno comerciante dono de um mercadinho de secos e molhados, que enfrentava quatro problemas concretos:
+O Mercadinho do João foi criado para um cliente real: um pequeno comerciante dono de um mercadinho de secos e molhados, que enfrentava quatro problemas concretos:
 
 - **Perda de controle do estoque** — sem saber ao certo o que tinha ou não em loja.
 - **Compra excessiva** de produtos que ficavam parados, prendendo capital de giro (baixo, no caso de um pequeno comércio).
@@ -173,7 +173,7 @@ Todos os valores monetários e de quantidade usam o tipo `Decimal` do PostgreSQL
 ## 7. Estrutura de pastas
 
 ```
-contro_vend/
+mercadinho_joao/
 ├── prisma/
 │   ├── schema.prisma        # modelo de dados
 │   ├── migrations/          # histórico de migrations do banco

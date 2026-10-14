@@ -1,4 +1,4 @@
-# 🛒 Contro Vend - Sistema de Vendas & Estoque
+# 🛒 Mercadinho do João - Sistema de Vendas & Estoque
 
 Um sistema moderno e seguro de controle de vendas e estoque para pequenos comércios, desenvolvido com Node.js, Express, PostgreSQL e JavaScript vanilla.
 
@@ -67,10 +67,12 @@ docker-compose up -d
 npm run prisma:migrate
 ```
 
-6. **Crie um usuário admin** (opcional)
+6. **Crie um usuário admin**
 ```bash
-node create-admin.js
+npm run seed
 ```
+
+Configure `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` no `.env` antes de rodar o seed. Não há senha padrão segura para produção.
 
 7. **Inicie o servidor**
 ```bash
@@ -82,13 +84,11 @@ npm start
 http://localhost:3000
 ```
 
-## 🔐 Credenciais Padrão
+## 🔐 Credenciais de Acesso
 
-| Campo | Valor |
-|-------|-------|
-| **Email** | `diego@diego.com.br` |
-| **Senha** | `senha-removida` |
-| **Role** | ADMIN |
+Não há credencial padrão hardcoded. Crie o primeiro administrador com `npm run seed` usando as variáveis `ADMIN_EMAIL` e `ADMIN_PASSWORD` do `.env`.
+
+Para demonstração local, o auto-login usa somente uma conta `CASHIER` configurada no servidor (`AUTO_LOGIN_ENABLED=true`, `AUTO_LOGIN_EMAIL`, `AUTO_LOGIN_PASSWORD`) e nunca entra como `ADMIN`.
 
 ## 📁 Estrutura do Projeto
 
@@ -159,8 +159,11 @@ docker-compose.yml      # Composição de containers
 
 ### Usuários
 - `GET /api/users` - Listar usuários (ADMIN)
-- `POST /api/users` - Criar usuário (ADMIN)
+- `POST /api/users` - Criar usuário (ADMIN; conta nasce como CASHIER)
 - `PUT /api/users/:id` - Editar usuário (ADMIN)
+
+### Auto-login de demonstração
+- `POST /api/auth/auto-login` - Login local/demo somente com perfil CASHIER; desabilitado por padrão e sempre bloqueado em produção
 
 ### Importações
 - `POST /api/imports/products` - Importar produtos em lote (ADMIN)
@@ -187,8 +190,8 @@ npm test
 ```javascript
 // src/auth.js
 jwt.sign({ ... }, secret, {
-  issuer: 'contro-vend-api',
-  audience: 'contro-vend-web',
+  issuer: 'mercadinho-joao-api',
+  audience: 'mercadinho-joao-web',
 })
 ```
 
@@ -248,7 +251,7 @@ NODE_ENV=development
 PORT=3000
 
 # Database
-DATABASE_URL="postgresql://usuario:senha@localhost:5433/contro_vend?schema=public"
+DATABASE_URL="postgresql://usuario:senha@localhost:5433/mercadinho_joao?schema=public"
 
 # JWT
 JWT_SECRET=troque_por_um_segredo_longo_e_aleatorio
@@ -267,6 +270,11 @@ API_RATE_LIMIT_MAX=300
 ADMIN_NAME="Dono do Mercado"
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=TrocarEssaSenha123!
+
+# Auto-login local/demo (nunca usar ADMIN)
+AUTO_LOGIN_ENABLED=false
+AUTO_LOGIN_EMAIL=
+AUTO_LOGIN_PASSWORD=
 ```
 
 ## 🐳 Docker

@@ -13,7 +13,10 @@ router.get('/forecast', async (req, res) => {
 
 router.get('/sales-summary', async (req, res) => {
   const from = parseDateParam(req.query.from, 'from');
-  const to = parseDateParam(req.query.to, 'to');
+  let to = parseDateParam(req.query.to, 'to');
+  // Se 'to' foi fornecida, move para o fim do dia (23:59:59.999)
+  if (to) to = new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1);
+
   const where = { canceled: false };
   if (from || to) where.createdAt = {};
   if (from) where.createdAt.gte = from;
@@ -34,7 +37,10 @@ router.get('/sales-summary', async (req, res) => {
 
 router.get('/top-products', async (req, res) => {
   const from = parseDateParam(req.query.from, 'from');
-  const to = parseDateParam(req.query.to, 'to');
+  let to = parseDateParam(req.query.to, 'to');
+  // Se 'to' foi fornecida, move para o fim do dia (23:59:59.999)
+  if (to) to = new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1);
+
   const limit = clampIntParam(req.query.limit, { min: 1, max: 50, fallback: 10 });
 
   const saleWhere = { canceled: false };

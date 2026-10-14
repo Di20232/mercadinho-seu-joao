@@ -62,12 +62,20 @@ const config = {
   // para o usuário digitar a nova senha com janela pequena de abuso.
   passwordResetExpiresMin: intEnv('PASSWORD_RESET_EXPIRES_MIN', 30, 1),
 
+  // Auto-login é apenas para demonstração local. Em produção fica sempre
+  // desativado, mesmo que alguém configure AUTO_LOGIN_ENABLED=true por engano.
+  autoLogin: {
+    enabled: !isProduction && process.env.AUTO_LOGIN_ENABLED === 'true',
+    email: (process.env.AUTO_LOGIN_EMAIL || '').toLowerCase().trim(),
+    password: process.env.AUTO_LOGIN_PASSWORD || '',
+  },
+
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: intEnv('SMTP_PORT', 587),
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'Contro Vend <no-reply@controvend.local>',
+    from: process.env.SMTP_FROM || 'Mercadinho do João <no-reply@mercadinhodojoao.local>',
   },
   alertEmailTo: process.env.ALERT_EMAIL_TO || '',
 };

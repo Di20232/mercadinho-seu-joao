@@ -778,41 +778,54 @@ async function renderRelatorios() {
 }
 
 async function loadReports() {
-  const from = document.getElementById('rep-from').value;
-  const to = document.getElementById('rep-to').value;
-  const qs = new URLSearchParams();
-  if (from) qs.set('from', from);
-  if (to) qs.set('to', to);
+  try {
+    const from = document.getElementById('rep-from').value;
+    const to = document.getElementById('rep-to').value;
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
 
-  const [summary, topProducts, slowMoving] = await Promise.all([
-    api.get(`/reports/sales-summary?${qs.toString()}`),
-    api.get(`/reports/top-products?${qs.toString()}`),
-    api.get('/reports/slow-moving'),
-  ]);
+    const [summary, topProducts, slowMoving] = await Promise.all([
+      api.get(`/reports/sales-summary?${qs.toString()}`),
+      api.get(`/reports/top-products?${qs.toString()}`),
+      api.get('/reports/slow-moving'),
+    ]);
 
-  document.getElementById('rep-total').textContent = formatMoney(summary.total);
-  document.getElementById('rep-count').textContent = String(summary.count);
+    document.getElementById('rep-total').textContent = formatMoney(summary.total);
+    document.getElementById('rep-count').textContent = String(summary.count);
 
-  const byDayBody = document.getElementById('rep-by-day');
-  byDayBody.innerHTML = '';
-  Object.entries(summary.byDay).sort().reverse().forEach(([day, total]) => {
-    byDayBody.appendChild(el('tr', {}, [el('td', {}, day), el('td', {}, formatMoney(total))]));
-  });
-  if (Object.keys(summary.byDay).length === 0) byDayBody.appendChild(el('tr', {}, el('td', { colspan: '2', class: 'muted' }, 'Sem vendas no período.')));
+    const byDayBody = document.getElementById('rep-by-day');
+    byDayBody.innerHTML = '';
+    Object.entries(summary.byDay).sort().reverse().forEach(([day, total]) => {
+      byDayBody.appendChild(el('tr', {}, [el('td', {}, day), el('td', {}, formatMoney(total))]));
+    });
+    if (Object.keys(summary.byDay).length === 0) byDayBody.appendChild(el('tr', {}, el('td', { colspan: '2', class: 'muted' }, 'Sem vendas no período.')));
 
-  const topBody = document.getElementById('rep-top-products');
-  topBody.innerHTML = '';
-  topProducts.forEach((p) => {
-    topBody.appendChild(el('tr', {}, [el('td', {}, p.name), el('td', {}, String(p.quantitySold)), el('td', {}, formatMoney(p.revenue))]));
-  });
-  if (topProducts.length === 0) topBody.appendChild(el('tr', {}, el('td', { colspan: '3', class: 'muted' }, 'Sem vendas no período.')));
+    const topBody = document.getElementById('rep-top-products');
+    topBody.innerHTML = '';
+    topProducts.forEach((p) => {
+      topBody.appendChild(el('tr', {}, [el('td', {}, p.name), el('td', {}, String(p.quantitySold)), el('td', {}, formatMoney(p.revenue))]));
+    });
+    if (topProducts.length === 0) topBody.appendChild(el('tr', {}, el('td', { colspan: '3', class: 'muted' }, 'Sem vendas no período.')));
 
-  const slowBody = document.getElementById('rep-slow-moving');
-  slowBody.innerHTML = '';
-  slowMoving.forEach((p) => {
-    slowBody.appendChild(el('tr', {}, [el('td', {}, p.name), el('td', {}, String(p.currentStock)), el('td', {}, formatMoney(p.capitalParado))]));
-  });
-  if (slowMoving.length === 0) slowBody.appendChild(el('tr', {}, el('td', { colspan: '3', class: 'muted' }, 'Nenhum produto parado.')));
+    const slowBody = document.getElementById('rep-slow-moving');
+    slowBody.innerHTML = '';
+    slowMoving.forEach((p) => {
+      slowBody.appendChild(el('tr', {}, [el('td', {}, p.name), el('td', {}, String(p.currentStock)), el('td', {}, formatMoney(p.capitalParado))]));
+    });
+    if (slowMoving.length === 0) slowBody.appendChild(el('tr', {}, el('td', { colspan: '3', class: 'muted' }, 'Nenhum produto parado.')));
+  } catch (err) {
+    console.error('Erro ao carregar relatórios:', err);
+    // Mostrar erro ao usuário de forma amigável
+    const totalEl = document.getElementById('rep-total');
+    if (totalEl && totalEl.parentElement) {
+      const card = totalEl.closest('.card');
+      if (card) {
+        const errorMsg = el('p', { class: 'error notice' }, `❌ Erro ao carregar relatório: ${err.message}`);
+        card.insertBefore(errorMsg, card.firstChild);
+      }
+    }
+  }
 }
 
 // ---------- Usuários ----------

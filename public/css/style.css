@@ -116,6 +116,12 @@ button.small { padding: 6px 12px; font-size: 0.8125rem; margin: 0; box-shadow: n
   font-size: 0.875rem;
   margin-top: 8px;
 }
+.error.notice {
+  padding: 10px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+}
 
 .login-wrap {
   min-height: 100vh;
@@ -170,7 +176,7 @@ button.small { padding: 6px 12px; font-size: 0.8125rem; margin: 0; box-shadow: n
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; color: var(--text); letter-spacing: -0.01em; }
 .brand::before {
-  content: "CV";
+  content: "MJ";
   width: 30px;
   height: 30px;
   border-radius: 9px;

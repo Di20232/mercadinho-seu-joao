@@ -12,8 +12,8 @@ test('JWT: signToken inclui issuer e audience', async () => {
 
   // Verificar que o token pode ser decodificado
   const decoded = jwt.decode(token);
-  assert.strictEqual(decoded.iss, 'contro-vend-api', 'issuer deve ser contro-vend-api');
-  assert.strictEqual(decoded.aud, 'contro-vend-web', 'audience deve ser contro-vend-web');
+  assert.strictEqual(decoded.iss, 'mercadinho-joao-api', 'issuer deve ser mercadinho-joao-api');
+  assert.strictEqual(decoded.aud, 'mercadinho-joao-web', 'audience deve ser mercadinho-joao-web');
   assert.strictEqual(decoded.sub, 'user-123');
   assert.strictEqual(decoded.role, 'ADMIN');
 });
@@ -29,7 +29,7 @@ test('JWT: verificação falha com issuer inválido', async () => {
     {
       algorithm: 'HS256',
       issuer: 'outro-app',
-      audience: 'contro-vend-web',
+      audience: 'mercadinho-joao-web',
       expiresIn: '8h'
     }
   );
@@ -38,8 +38,8 @@ test('JWT: verificação falha com issuer inválido', async () => {
   assert.throws(() => {
     jwt_module.verify(fakeToken, config.jwtSecret, {
       algorithms: ['HS256'],
-      issuer: 'contro-vend-api',
-      audience: 'contro-vend-web'
+      issuer: 'mercadinho-joao-api',
+      audience: 'mercadinho-joao-web'
     });
   }, /issuer/i);
 });
@@ -54,7 +54,7 @@ test('JWT: verificação falha com audience inválida', async () => {
     config.jwtSecret,
     {
       algorithm: 'HS256',
-      issuer: 'contro-vend-api',
+      issuer: 'mercadinho-joao-api',
       audience: 'outro-app',
       expiresIn: '8h'
     }
@@ -64,8 +64,8 @@ test('JWT: verificação falha com audience inválida', async () => {
   assert.throws(() => {
     jwt_module.verify(fakeToken, config.jwtSecret, {
       algorithms: ['HS256'],
-      issuer: 'contro-vend-api',
-      audience: 'contro-vend-web'
+      issuer: 'mercadinho-joao-api',
+      audience: 'mercadinho-joao-web'
     });
   }, /audience/i);
 });
@@ -79,8 +79,8 @@ test('JWT: algoritmo inválido é rejeitado', async () => {
     config.jwtSecret,
     {
       algorithm: 'HS512', // Algoritmo diferente
-      issuer: 'contro-vend-api',
-      audience: 'contro-vend-web',
+      issuer: 'mercadinho-joao-api',
+      audience: 'mercadinho-joao-web',
       expiresIn: '8h'
     }
   );
@@ -89,8 +89,8 @@ test('JWT: algoritmo inválido é rejeitado', async () => {
   assert.throws(() => {
     jwt_module.verify(token, config.jwtSecret, {
       algorithms: ['HS256'],
-      issuer: 'contro-vend-api',
-      audience: 'contro-vend-web'
+      issuer: 'mercadinho-joao-api',
+      audience: 'mercadinho-joao-web'
     });
   }, /algorithm/i);
 });

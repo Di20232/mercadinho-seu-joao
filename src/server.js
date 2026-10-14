@@ -20,7 +20,7 @@ process.on('uncaughtException', (err) => {
 });
 
 const server = app.listen(config.port, () => {
-  console.log(`Contro Vend rodando na porta ${config.port} (${config.nodeEnv})`);
+  console.log(`Mercadinho do João rodando na porta ${config.port} (${config.nodeEnv})`);
   scheduleDailyAlerts();
 });
 

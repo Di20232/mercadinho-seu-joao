@@ -1,8 +1,8 @@
 {
-  "name": "contro-vend",
+  "name": "mercadinho-joao",
   "version": "1.0.0",
   "private": true,
-  "description": "Sistema de controle de vendas e estoque para pequeno comerciante",
+  "description": "Sistema de vendas e estoque para Mercadinho do João",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

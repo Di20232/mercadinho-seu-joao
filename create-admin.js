@@ -1,46 +1,38 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+
 const prisma = new PrismaClient();
 
 async function main() {
-  try {
-    console.log('Criando usuário admin...');
+  const email = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
+  const password = process.env.ADMIN_PASSWORD;
+  const name = process.env.ADMIN_NAME || 'Administrador';
 
-    const passwordHash = await bcrypt.hash('senha-removida', 12);
+  if (!email) throw new Error('Defina ADMIN_EMAIL no .env antes de criar o admin.');
+  if (!password || password.length < 8) throw new Error('Defina ADMIN_PASSWORD (mínimo 8 caracteres) no .env.');
 
-    const admin = await prisma.user.create({
-      data: {
-        name: 'Administrador',
-        email: 'adm@adm.com.br',
-        passwordHash,
-        role: 'ADMIN',
-        active: true,
-        sessionVersion: 1,
-      }
-    });
-
-    console.log('✅ Usuário admin criado com sucesso!');
-    console.log(`  Email: ${admin.email}`);
-    console.log(`  Senha: senha-removida`);
-    console.log(`  ID: ${admin.id}`);
-  } catch (e) {
-    if (e.code === 'P2002') {
-      console.log('⚠️  Admin com este email já existe. Atualizando senha...');
-
-      const passwordHash = await bcrypt.hash('senha-removida', 12);
-      const admin = await prisma.user.updateMany({
-        where: { email: 'adm@adm.com.br' },
-        data: { passwordHash }
-      });
-
-      console.log('✅ Senha atualizada com sucesso!');
-      console.log(`Senha: senha-removida`);
-    } else {
-      console.error('❌ Erro:', e.message);
-    }
-  } finally {
-    await prisma.$disconnect();
+  const existingAdmin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+  if (existingAdmin && existingAdmin.email !== email) {
+    throw new Error(`Já existe um administrador (${existingAdmin.email}). Use npm run reset-password para recuperação.`);
   }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const admin = await prisma.user.upsert({
+    where: { email },
+    update: { name, passwordHash, role: 'ADMIN', active: true, sessionVersion: { increment: 1 } },
+    create: { name, email, passwordHash, role: 'ADMIN', active: true },
+  });
+
+  console.log(`Administrador pronto: ${admin.email}`);
+  console.log('Senha lida de ADMIN_PASSWORD. Ela não foi exibida por segurança.');
 }
 
-main();
+main()
+  .catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

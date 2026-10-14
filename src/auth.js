@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const config = require('./config');
 const prisma = require('./db');
 
-const COOKIE_NAME = 'cv_token';
+const COOKIE_NAME = 'mj_token';
 const COOKIE_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 horas
 const JWT_ALGORITHM = 'HS256';
 
@@ -19,8 +19,8 @@ function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role, sv: user.sessionVersion }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
     algorithm: JWT_ALGORITHM,
-    issuer: 'contro-vend-api',
-    audience: 'contro-vend-web',
+    issuer: 'mercadinho-joao-api',
+    audience: 'mercadinho-joao-web',
   });
 }
 
@@ -46,8 +46,8 @@ async function authenticate(req, res, next) {
   try {
     payload = jwt.verify(token, config.jwtSecret, {
       algorithms: [JWT_ALGORITHM],
-      issuer: 'contro-vend-api',
-      audience: 'contro-vend-web',
+      issuer: 'mercadinho-joao-api',
+      audience: 'mercadinho-joao-web',
     });
   } catch {
     return res.status(401).json({ error: 'Sessão inválida ou expirada.' });

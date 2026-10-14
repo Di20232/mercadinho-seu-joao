@@ -22,10 +22,10 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: contro_vend
+      POSTGRES_DB: mercadinho_joao
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
     volumes:
-      - contro_vend_db_data:/var/lib/postgresql/data
+      - mercadinho_joao_db_data:/var/lib/postgresql/data
     # 5433 no host: a porta 5432 costuma já estar ocupada por um PostgreSQL
     # instalado nativamente na máquina.
     ports:
@@ -45,7 +45,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme_local_only}@db:5432/contro_vend?schema=public
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme_local_only}@db:5432/mercadinho_joao?schema=public
       JWT_SECRET: ${JWT_SECRET:-troque_este_segredo_local_de_desenvolvimento}
       JWT_EXPIRES_IN: 8h
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3100}
@@ -55,7 +55,7 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-Contro Vend <no-reply@controvend.local>}
+      SMTP_FROM: ${SMTP_FROM:-Mercadinho do João <no-reply@mercadinhodojoao.local>}
       ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
       LOW_STOCK_ALERT_HOUR: ${LOW_STOCK_ALERT_HOUR:-8}
       EXPIRY_ALERT_DAYS: ${EXPIRY_ALERT_DAYS:-7}
@@ -69,4 +69,4 @@ services:
       - "3100:3000"
 
 volumes:
-  contro_vend_db_data:
+  mercadinho_joao_db_data:

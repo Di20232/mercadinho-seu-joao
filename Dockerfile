@@ -23,8 +23,12 @@ COPY . .
 
 EXPOSE 3000
 
+# Copia o script que aguarda o banco ficar pronto
+COPY wait-for-db.sh /app/wait-for-db.sh
+RUN chmod +x /app/wait-for-db.sh
+
 # Aplica migrations pendentes a cada subida do container (idempotente — não
 # faz nada se já estiver tudo aplicado) e então inicia o servidor. Não roda
 # seed automaticamente: isso é feito uma vez, manualmente, via
 # "docker compose exec app npm run seed".
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
+CMD ["/app/wait-for-db.sh", "db", "5432", "sh", "-c", "npx prisma migrate deploy && node src/server.js"]

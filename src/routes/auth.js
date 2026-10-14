@@ -45,10 +45,23 @@ const resetLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Muitas tentativas. Tente novamente em alguns minutos.' },
 });
+const autoLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas de auto-login. Tente novamente em alguns minutos.' },
+});
 
 const loginSchema = z.object({
-  email: z.string().trim().email().max(255),
-  password: z.string().min(1).max(200),
+  email: z.string({ required_error: 'informe o e-mail.' })
+    .trim()
+    .min(1, 'informe o e-mail.')
+    .email('formato inválido. Verifique se digitou o e-mail corretamente.')
+    .max(255, 'muito longo.'),
+  password: z.string({ required_error: 'informe a senha.' })
+    .min(1, 'informe a senha.')
+    .max(200, 'muito longa.'),
 });
 
 const registerSchema = z.object({
@@ -98,6 +111,35 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
   res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
 });
 
+// Auto-login existe só para demonstração local. Ele nunca aceita credenciais do
+// navegador e nunca entra como ADMIN: lê usuário/senha do ambiente, valida a
+// senha normalmente e bloqueia qualquer conta que não seja CASHIER.
+router.post('/auto-login', autoLoginLimiter, async (req, res) => {
+  if (!config.autoLogin.enabled) {
+    return res.status(404).json({ error: 'Auto-login não está habilitado.' });
+  }
+  if (!config.autoLogin.email || !config.autoLogin.password) {
+    return res.status(503).json({ error: 'Auto-login não está configurado.' });
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: config.autoLogin.email } });
+  if (!user || !user.active) {
+    return res.status(401).json({ error: 'Usuário de demonstração indisponível.' });
+  }
+  if (user.role !== 'CASHIER') {
+    return res.status(403).json({ error: 'Auto-login só pode usar perfil Caixa.' });
+  }
+
+  const ok = await verifyPassword(config.autoLogin.password, user.passwordHash);
+  if (!ok) {
+    return res.status(401).json({ error: 'Credenciais de demonstração inválidas.' });
+  }
+
+  const token = signToken(user);
+  setAuthCookie(res, token);
+  res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+});
+
 // Auto-cadastro público. Conta nasce como CASHIER e ativa, e a sessão é aberta
 // na mesma resposta, então quem se cadastra entra direto no sistema. Nunca
 // aceita role do cliente — o schema é .strict() e o papel é fixado no servidor.
@@ -128,16 +170,20 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
   res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
 });
 
-// Solicitação de reset. Como não há SMTP, o link/token é devolvido na própria
-// resposta (e também logado no servidor). Em produção com SMTP configurado,
-// este campo sairia da resposta e o link iria só por e-mail.
+// Solicitação de reset. A resposta é genérica para não enumerar usuários. No
+// ambiente local/demo o link volta na resposta para viabilizar teste manual;
+// em produção o token nunca é devolvido por HTTP.
 router.post('/forgot-password', forgotLimiter, validate(forgotSchema), async (req, res) => {
   const { email } = req.body;
+  const generic = { message: 'Se o e-mail estiver cadastrado, as instruções para redefinir a senha serão disponibilizadas.' };
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
 
-  // Mensagem específica se o email não for encontrado
+  // Resposta genérica para não revelar se o e-mail existe. Isso evita enumeração
+  // de usuários e também corrige o erro 500 causado pela variável generic antes
+  // inexistente. Em ambiente sem SMTP, o link ainda volta na resposta somente
+  // quando a conta existe, preservando a usabilidade local sem quebrar o fluxo.
   if (!user || !user.active) {
-    return res.status(404).json({ error: 'Você não tem cadastro com esse email verifique ou corrija' });
+    return res.json(generic);
   }
 
   const rawToken = generateResetToken();
@@ -157,11 +203,16 @@ router.post('/forgot-password', forgotLimiter, validate(forgotSchema), async (re
   ]);
 
   const resetUrl = `${config.appBaseUrl}/reset-password.html?token=${encodeURIComponent(rawToken)}`;
-  // Sem SMTP: loga no servidor para o dono/operador repassar ao funcionário.
-  // Em dev fica visível no console; em prod vai para o log da aplicação.
-  console.log(`[reset] link de redefinição para ${user.email}: ${resetUrl}`);
 
-  return res.json({ ...generic, resetUrl });
+  // Sem SMTP dedicado para recuperação, o ambiente local/demo precisa receber o
+  // link para continuar o fluxo. Em produção, nunca devolve token de reset na
+  // resposta HTTP; sem um entregador de e-mail configurado, retorna apenas a
+  // mensagem genérica para não criar um canal de tomada de conta.
+  if (config.nodeEnv !== 'production') {
+    return res.json({ ...generic, resetUrl });
+  }
+
+  return res.json(generic);
 });
 
 // Conclusão do reset. Valida token (hash, não expirado, não usado), troca a

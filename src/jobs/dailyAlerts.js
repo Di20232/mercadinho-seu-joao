@@ -45,7 +45,7 @@ async function buildAlertText() {
   const section = (label, items, fmt) => (items.length ? `\n${label}:\n${items.map(fmt).join('\n')}\n` : '');
 
   return [
-    'Alerta diário de estoque - Contro Vend',
+    'Alerta diário de estoque - Mercadinho do João',
     section('Estoque abaixo do mínimo', lowStock, (p) => `- ${p.name}: ${p.currentStock} ${p.unit} (mínimo ${p.minStock})`),
     section('Previsão de esgotar em até 7 dias', soonOut, (p) => `- ${p.name}: previsão de acabar em ${p.daysUntilStockout} dia(s)`),
     section('Produtos próximos do vencimento', expiring, (p) => `- ${p.name}: vence em ${p.expiryDate.toLocaleDateString('pt-BR')}`),
@@ -86,7 +86,7 @@ async function sendDailyAlertEmail() {
   await transport.sendMail({
     from: config.smtp.from,
     to: config.alertEmailTo,
-    subject: 'Alerta diário de estoque - Contro Vend',
+    subject: 'Alerta diário de estoque - Mercadinho do João',
     text,
   });
   console.log('[alertas] E-mail de alerta enviado.');

@@ -1,52 +1,51 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+
 const prisma = new PrismaClient();
 
 async function main() {
-  try {
-    console.log('Atualizando usuário diego@diego.com.br para ADMIN...');
+  const email = (process.env.USER_EMAIL || '').toLowerCase().trim();
+  const name = process.env.USER_NAME || 'Usuário';
+  const role = (process.env.USER_ROLE || 'CASHIER').toUpperCase();
+  const password = process.env.USER_PASSWORD;
 
-    const passwordHash = await bcrypt.hash('senha-removida', 12);
+  if (!email) throw new Error('Defina USER_EMAIL para criar ou atualizar o usuário.');
+  if (!['ADMIN', 'CASHIER'].includes(role)) throw new Error('USER_ROLE deve ser ADMIN ou CASHIER.');
 
-    // Primeiro tenta atualizar se o usuário existe
-    let updated = await prisma.user.updateMany({
-      where: { email: 'diego@diego.com.br' },
-      data: {
-        role: 'ADMIN',
-        passwordHash,
-        active: true,
-        sessionVersion: 1
-      }
-    });
-
-    if (updated.count > 0) {
-      console.log(`✅ Usuário diego@diego.com.br atualizado para ADMIN`);
-      console.log(`Senha: senha-removida`);
-    } else {
-      // Se não existe, cria um novo
-      console.log('Usuário não encontrado. Criando novo...');
-
-      const newUser = await prisma.user.create({
-        data: {
-          name: 'Diego',
-          email: 'diego@diego.com.br',
-          passwordHash,
-          role: 'ADMIN',
-          active: true,
-          sessionVersion: 1,
-        }
-      });
-
-      console.log(`✅ Usuário criado como ADMIN`);
-      console.log(`Email: ${newUser.email}`);
-      console.log(`Senha: senha-removida`);
-      console.log(`ID: ${newUser.id}`);
-    }
-  } catch (e) {
-    console.error('❌ Erro:', e.message);
-  } finally {
-    await prisma.$disconnect();
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (!existing && !password) {
+    throw new Error('USER_PASSWORD é obrigatório ao criar usuário novo.');
   }
+
+  const data = { name, role, active: true };
+  if (password) {
+    if (password.length < 8) throw new Error('USER_PASSWORD precisa ter ao menos 8 caracteres.');
+    data.passwordHash = await bcrypt.hash(password, 12);
+    data.sessionVersion = { increment: 1 };
+  }
+
+  const createData = {
+    name,
+    email,
+    role,
+    active: true,
+    passwordHash: data.passwordHash,
+  };
+
+  const user = existing
+    ? await prisma.user.update({ where: { email }, data })
+    : await prisma.user.create({ data: createData });
+
+  console.log(`Usuário pronto: ${user.email} (${user.role})`);
+  console.log('Senha não exibida. Se informada, foi lida de USER_PASSWORD.');
 }
 
-main();
+main()
+  .catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

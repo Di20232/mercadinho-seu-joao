@@ -13,6 +13,7 @@ const http = require('node:http');
 const bcrypt = require('bcryptjs');
 
 const app = require('../src/app');
+const config = require('../src/config');
 const { prisma, resetDb } = require('./helpers/db');
 const { makeCookieJar, request } = require('./helpers/http');
 
@@ -47,6 +48,36 @@ after(async () => {
   // (TypeError) que mascara a mensagem real do problema.
   if (server) await new Promise((resolve) => server.close(resolve));
   await prisma.$disconnect();
+});
+
+test('login: retorna mensagens específicas para campo, e-mail e senha', async () => {
+  const invalidEmail = await request(baseUrl, null, '/api/auth/login', {
+    method: 'POST',
+    body: { email: 'email-invalido', password: 'qualquer' },
+  });
+  assert.equal(invalidEmail.status, 400);
+  assert.match(invalidEmail.body.error, /E-mail: formato inválido/);
+
+  const missingPassword = await request(baseUrl, null, '/api/auth/login', {
+    method: 'POST',
+    body: { email: 'admin.test@example.com', password: '' },
+  });
+  assert.equal(missingPassword.status, 400);
+  assert.match(missingPassword.body.error, /Senha: informe a senha/);
+
+  const wrongEmail = await request(baseUrl, null, '/api/auth/login', {
+    method: 'POST',
+    body: { email: 'nao-existe@example.com', password: 'TesteSenha123!' },
+  });
+  assert.equal(wrongEmail.status, 401);
+  assert.equal(wrongEmail.body.error, 'Login incorreto.');
+
+  const wrongPassword = await request(baseUrl, null, '/api/auth/login', {
+    method: 'POST',
+    body: { email: 'admin.test@example.com', password: 'senha-errada' },
+  });
+  assert.equal(wrongPassword.status, 401);
+  assert.equal(wrongPassword.body.error, 'Senha incorreta.');
 });
 
 test('CSRF: rota que altera estado rejeita requisição sem X-Requested-With', async () => {
@@ -199,6 +230,9 @@ test('autorização: funcionário (caixa) é bloqueado de rotas administrativas 
   const reportsRes = await request(baseUrl, cashierJar, '/api/reports/forecast');
   assert.equal(reportsRes.status, 403);
 
+  const salesSummaryRes = await request(baseUrl, cashierJar, '/api/reports/sales-summary');
+  assert.equal(salesSummaryRes.status, 403);
+
   const productsRes = await request(baseUrl, cashierJar, '/api/products');
   assert.equal(productsRes.status, 200);
   for (const p of productsRes.body) {
@@ -240,6 +274,110 @@ test('produto desativado fica invisível para o caixa na rota de detalhe (não s
 
   // reativa para não deixar lixo para os próximos testes/rodadas manuais
   await request(baseUrl, adminJar, `/api/products/${product.body.id}`, { method: 'PUT', body: { active: true } });
+});
+
+test('auto-login: fica desabilitado por padrão', async () => {
+  const previous = { ...config.autoLogin };
+  config.autoLogin = { enabled: false, email: '', password: '' };
+  try {
+    const res = await request(baseUrl, null, '/api/auth/auto-login', { method: 'POST' });
+    assert.equal(res.status, 404);
+  } finally {
+    config.autoLogin = previous;
+  }
+});
+
+test('auto-login: recusa conta ADMIN mesmo com senha correta', async () => {
+  const previous = { ...config.autoLogin };
+  config.autoLogin = { enabled: true, email: 'admin.test@example.com', password: 'TesteSenha123!' };
+  try {
+    const res = await request(baseUrl, null, '/api/auth/auto-login', { method: 'POST' });
+    assert.equal(res.status, 403);
+  } finally {
+    config.autoLogin = previous;
+  }
+});
+
+test('auto-login: permite apenas usuário CASHIER configurado no servidor', async () => {
+  const passwordHash = await bcrypt.hash('SenhaCaixaAuto123!', 12);
+  await prisma.user.create({
+    data: { name: 'Caixa Auto Login', email: 'caixa.auto@example.com', passwordHash, role: 'CASHIER' },
+  });
+
+  const previous = { ...config.autoLogin };
+  config.autoLogin = { enabled: true, email: 'caixa.auto@example.com', password: 'SenhaCaixaAuto123!' };
+  const jar = makeCookieJar();
+  try {
+    const res = await request(baseUrl, jar, '/api/auth/auto-login', { method: 'POST' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.role, 'CASHIER');
+    assert.match(jar.header(), /mj_token=/, 'auto-login deve criar cookie de sessão HttpOnly pelo backend');
+  } finally {
+    config.autoLogin = previous;
+  }
+});
+
+test('recuperação de senha: e-mail inexistente recebe resposta genérica sem erro 500', async () => {
+  const res = await request(baseUrl, null, '/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'nao-existe@example.com' },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.message, 'Se o e-mail estiver cadastrado, as instruções para redefinir a senha serão disponibilizadas.');
+  assert.equal('resetUrl' in res.body, false);
+});
+
+test('relatórios: filtro até uma data inclui vendas do dia inteiro', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Relatório Dia', unit: 'UN', costPrice: 1, salePrice: 10, initialStock: 5 },
+  });
+  assert.equal(product.status, 201);
+
+  const sale = await request(baseUrl, adminJar, '/api/sales', {
+    method: 'POST',
+    body: { items: [{ productId: product.body.id, quantity: 1 }] },
+  });
+  assert.equal(sale.status, 201);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const summary = await request(baseUrl, adminJar, `/api/reports/sales-summary?to=${today}`);
+  assert.equal(summary.status, 200);
+  assert.ok(summary.body.count >= 1, 'to=AAAA-MM-DD precisa incluir vendas feitas em qualquer horário desse dia');
+  assert.ok(summary.body.total >= 10);
+
+  const topProducts = await request(baseUrl, adminJar, `/api/reports/top-products?to=${today}`);
+  assert.equal(topProducts.status, 200);
+  assert.ok(topProducts.body.some((p) => p.name === 'Produto Relatório Dia'));
+});
+
+test('recuperação de senha: token é de uso único', async () => {
+  const passwordHash = await bcrypt.hash('SenhaReset123!', 12);
+  await prisma.user.create({
+    data: { name: 'Reset Teste', email: 'reset.teste@example.com', passwordHash, role: 'CASHIER' },
+  });
+
+  const forgot = await request(baseUrl, null, '/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'reset.teste@example.com' },
+  });
+  assert.equal(forgot.status, 200);
+  assert.ok(forgot.body.resetUrl, 'ambiente local/demo deve disponibilizar resetUrl para teste manual do fluxo');
+
+  const token = new URL(forgot.body.resetUrl).searchParams.get('token');
+  assert.ok(token);
+
+  const first = await request(baseUrl, null, '/api/auth/reset-password', {
+    method: 'POST',
+    body: { token, password: 'NovaSenhaReset123!' },
+  });
+  assert.equal(first.status, 200);
+
+  const second = await request(baseUrl, null, '/api/auth/reset-password', {
+    method: 'POST',
+    body: { token, password: 'OutraSenhaReset123!' },
+  });
+  assert.equal(second.status, 400, 'token de reset reutilizado precisa ser recusado');
 });
 
 // ---------- Importação de planilha ----------

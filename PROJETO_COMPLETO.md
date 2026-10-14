@@ -1,4 +1,4 @@
-# ✅ CONTRO VEND — PROJETO FINALIZADO E PRONTO
+# ✅ MERCADINHO DO JOÃO — PROJETO FINALIZADO E PRONTO
 
 ## 🎉 RESUMO EXECUTIVO
 
@@ -8,7 +8,7 @@
 - 📥 **CSV**: ✅ 26 Produtos Prontos para Importar
 - 🌐 **Servidor**: ✅ Rodando em http://localhost:3000
 - 🐳 **Docker**: ✅ PostgreSQL Ativo
-- 👤 **Autenticação**: ✅ diego@diego.com.br (ADMIN)
+- 👤 **Autenticação**: ✅ Admin via `npm run seed`; auto-login local apenas com perfil Caixa
 
 ---
 
@@ -21,8 +21,8 @@
 
 ### ✅ P0.2: JWT com Issuer/Audience
 - `src/auth.js` (linhas 18-24)
-- Issuer: `'contro-vend-api'`
-- Audience: `'contro-vend-web'`
+- Issuer: `'mercadinho-joao-api'`
+- Audience: `'mercadinho-joao-web'`
 - Impede tokens forjados de outras aplicações
 
 ### ✅ P0.3: CORS com Allowlist Dinâmico
@@ -108,8 +108,8 @@
 ## 🚀 COMO USAR O PROJETO
 
 1. **Acesse o site**
-   - http://localhost:3000/auto-login.html
-   - Faz login automaticamente como diego@diego.com.br
+   - http://localhost:3000
+   - Para demonstração local, configure `AUTO_LOGIN_ENABLED=true` com uma conta `CASHIER` e acesse `/auto-login.html`
 
 2. **Explore o Dashboard**
    - Produtos: Veja os 8 produtos iniciais
@@ -130,11 +130,9 @@
 
 ## 🔐 CREDENCIAIS DE ACESSO
 
-| Campo | Valor |
-|-------|-------|
-| **Email** | `diego@diego.com.br` |
-| **Senha** | `senha-removida` |
-| **Role** | `ADMIN` |
+Não há credencial padrão hardcoded. Crie o primeiro administrador com `npm run seed` usando `ADMIN_EMAIL` e `ADMIN_PASSWORD` no `.env`.
+
+O auto-login é apenas para ambiente local/demo, fica desabilitado por padrão e o backend bloqueia qualquer conta que não seja `CASHIER`.
 
 ---
 
@@ -175,6 +173,6 @@
 
 ## 🎉 CONCLUSÃO
 
-**O PROJETO CONTRO VEND ESTÁ PRONTO PARA PRODUÇÃO!**
+**O PROJETO MERCADINHO DO JOÃO ESTÁ PRONTO PARA PRODUÇÃO APÓS VALIDAÇÃO COMPLETA DO AMBIENTE!**
 
 Todos os problemas de segurança foram resolvidos. O sistema está funcionando corretamente com dados reais. Você pode importar mais produtos e começar a usar agora!

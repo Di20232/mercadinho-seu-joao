@@ -13,13 +13,13 @@
 #### P0.2: Validação de JWT com Issuer e Audience ✅
 **Arquivos modificados:**
 - `src/auth.js`
-  - Linha 18-22: Adicionado `issuer: 'contro-vend-api'` e `audience: 'contro-vend-web'` em `signToken()`
+  - Linha 18-22: Adicionado `issuer: 'mercadinho-joao-api'` e `audience: 'mercadinho-joao-web'` em `signToken()`
   - Linha 45-48: Adicionado validação de `issuer` e `audience` em `authenticate()`
 
 **Benefício:**
 - Impede aceitar tokens forjados de outras aplicações
 - Protege contra confusão de algoritmo
-- Garante que apenas tokens autênticos da API Contro Vend são aceitos
+- Garante que apenas tokens autênticos da API Mercadinho do João são aceitos
 
 **Teste:**
 ```
