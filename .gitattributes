@@ -1,0 +1,4 @@
+# Scripts de shell rodam dentro do container Linux: com quebra de linha do
+# Windows (CRLF) o "#!/bin/sh" vira "#!/bin/sh\r" e o container não sobe
+# ("wait-for-db.sh: not found"). Força LF mesmo com core.autocrlf=true.
+*.sh text eol=lf

@@ -11,7 +11,7 @@
 
 const form = document.getElementById('login-form');
 const errorEl = document.getElementById('login-error');
-const emailInput = document.getElementById('email');
+const loginInput = document.getElementById('login');
 const passwordInput = document.getElementById('password');
 
 function showLoginError(message) {
@@ -19,9 +19,10 @@ function showLoginError(message) {
   errorEl.hidden = false;
 }
 
-function validateLoginFields(email, password) {
-  if (!email) return 'E-mail: informe o e-mail usado no cadastro.';
-  if (!emailInput.validity.valid) return 'E-mail: formato inválido. Verifique se digitou corretamente.';
+// O campo aceita e-mail ou nome de usuário (ex: diego1239), então não há
+// formato a checar aqui — quem decide qual dos dois é o servidor.
+function validateLoginFields(login, password) {
+  if (!login) return 'E-mail ou usuário: informe o e-mail ou o usuário.';
   if (!password) return 'Senha: informe a senha.';
   return '';
 }
@@ -41,16 +42,16 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.hidden = true;
 
-  const email = emailInput.value.trim();
+  const login = loginInput.value.trim();
   const password = passwordInput.value;
-  const fieldError = validateLoginFields(email, password);
+  const fieldError = validateLoginFields(login, password);
   if (fieldError) {
     showLoginError(fieldError);
     return;
   }
 
   try {
-    await api.post('/auth/login', { email, password });
+    await api.post('/auth/login', { login, password });
     location.href = '/app.html';
   } catch (err) {
     showLoginError(friendlyLoginError(err));

@@ -10,6 +10,7 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateUsername } = require('../src/username');
 
 const prisma = new PrismaClient();
 
@@ -43,7 +44,13 @@ async function ensureDemoCashier() {
 
   const passwordHash = await bcrypt.hash('SenhaCaixa123!', 12);
   return prisma.user.create({
-    data: { name: 'Maria Caixa', email: 'maria.caixa@example.com', passwordHash, role: 'CASHIER' },
+    data: {
+      name: 'Maria Caixa',
+      email: 'maria.caixa@example.com',
+      username: await generateUsername(prisma, 'Maria Caixa'),
+      passwordHash,
+      role: 'CASHIER',
+    },
   });
 }
 

@@ -77,6 +77,8 @@ Primeira tela ao entrar no sistema — resume, num único lugar: estoque abaixo 
 
 O sistema tem um único administrador (o dono); toda outra conta é funcionário (caixa), seja criada pelo administrador ou pelo auto-cadastro na tela de login — o perfil não é escolhido nem editável. O administrador cadastra novos usuários (nome, e-mail, senha), edita nome/status ativo e redefine a senha de outro usuário. Ele não pode se autodesativar (trava contra ficar acidentalmente trancado fora do próprio sistema).
 
+Toda conta recebe um **nome de usuário** gerado automaticamente — primeiro nome, minúsculo e sem acento, mais um código aleatório de 4 dígitos (ex: `diego1239`) — que serve para entrar no lugar do e-mail. Ele aparece no topo do sistema, ao lado do nome, e na lista de Usuários do administrador.
+
 ## 3. Stack tecnológica
 
 ### Backend
@@ -125,7 +127,7 @@ Express (src/app.js)
 
 ### 4.2 Autenticação e sessão
 
-1. Login: `POST /api/auth/login` verifica e-mail/senha (bcrypt), emite um JWT assinado (`HS256` explícito) e o grava num cookie `httpOnly` + `SameSite=Lax` (+ `Secure` em produção).
+1. Login: `POST /api/auth/login` verifica e-mail ou nome de usuário + senha (bcrypt), emite um JWT assinado (`HS256` explícito) e o grava num cookie `httpOnly` + `SameSite=Lax` (+ `Secure` em produção).
 2. A cada requisição autenticada, o middleware `authenticate` (`src/auth.js`) verifica a assinatura do token **e** consulta o banco para confirmar que o usuário ainda está ativo e qual é o papel atual dele — uma mudança de status (demissão, rebaixamento) tem efeito imediato, mesmo que o token ainda não tenha expirado (validade de 8h).
 3. Autorização por papel: `authorize('ADMIN')` bloqueia rotas administrativas para quem não é admin, checado no servidor em toda requisição (não é só uma questão de esconder botão na tela).
 

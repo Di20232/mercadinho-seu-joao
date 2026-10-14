@@ -4,6 +4,7 @@ const prisma = require('../db');
 const validate = require('../validate');
 const httpError = require('../httpError');
 const { authenticate, authorize, hashPassword } = require('../auth');
+const { generateUsername } = require('../username');
 
 const router = express.Router();
 router.use(authenticate, authorize('ADMIN'));
@@ -25,7 +26,7 @@ const updateSchema = z.object({
 
 router.get('/', async (req, res) => {
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
+    select: { id: true, name: true, email: true, username: true, role: true, active: true, createdAt: true },
     orderBy: { name: 'asc' },
   });
   res.json(users);
@@ -40,12 +41,13 @@ router.post('/', validate(createSchema), async (req, res) => {
   let user;
   try {
     // Contas criadas pelo admin são sempre funcionário — só existe um administrador.
-    user = await prisma.user.create({ data: { name, email: email.toLowerCase(), passwordHash, role: 'CASHIER' } });
+    const username = await generateUsername(prisma, name);
+    user = await prisma.user.create({ data: { name, email: email.toLowerCase(), username, passwordHash, role: 'CASHIER' } });
   } catch (err) {
     if (err.code === 'P2002') throw httpError(409, 'Já existe um usuário com este e-mail.');
     throw err;
   }
-  res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role, active: user.active });
+  res.status(201).json({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role, active: user.active });
 });
 
 router.put('/:id', validate(updateSchema), async (req, res) => {
@@ -74,7 +76,7 @@ router.put('/:id', validate(updateSchema), async (req, res) => {
   }
 
   const user = await prisma.user.update({ where: { id: req.params.id }, data: update });
-  res.json({ id: user.id, name: user.name, email: user.email, role: user.role, active: user.active });
+  res.json({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role, active: user.active });
 });
 
 module.exports = router;

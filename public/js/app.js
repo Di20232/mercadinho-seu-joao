@@ -77,7 +77,9 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
     location.href = '/index.html';
     return;
   }
-  document.getElementById('user-name').textContent = `${currentUser.name} (${currentUser.role === 'ADMIN' ? 'admin' : 'caixa'})`;
+  // Mostra o nome de usuário junto do nome: é por ele que quem acabou de se
+  // cadastrar descobre o login curto que pode usar no lugar do e-mail.
+  document.getElementById('user-name').textContent = `${currentUser.name} · ${currentUser.username} (${currentUser.role === 'ADMIN' ? 'admin' : 'caixa'})`;
   document.getElementById('user-avatar').textContent = currentUser.name.trim().charAt(0).toUpperCase();
   document.body.classList.toggle('role-admin', currentUser.role === 'ADMIN');
   switchTab('dashboard');
@@ -842,6 +844,7 @@ async function loadUsers() {
   users.forEach((u) => {
     body.appendChild(el('tr', {}, [
       el('td', {}, u.name),
+      el('td', {}, u.username),
       el('td', {}, u.email),
       el('td', {}, u.role === 'ADMIN' ? 'Administrador' : 'Funcionário'),
       el('td', {}, u.active ? 'Sim' : 'Não'),

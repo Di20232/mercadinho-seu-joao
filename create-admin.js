@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateUsername } = require('./src/username');
 
 const prisma = new PrismaClient();
 
@@ -21,10 +22,10 @@ async function main() {
   const admin = await prisma.user.upsert({
     where: { email },
     update: { name, passwordHash, role: 'ADMIN', active: true, sessionVersion: { increment: 1 } },
-    create: { name, email, passwordHash, role: 'ADMIN', active: true },
+    create: { name, email, username: await generateUsername(prisma, name), passwordHash, role: 'ADMIN', active: true },
   });
 
-  console.log(`Administrador pronto: ${admin.email}`);
+  console.log(`Administrador pronto: ${admin.email} (usuário: ${admin.username})`);
   console.log('Senha lida de ADMIN_PASSWORD. Ela não foi exibida por segurança.');
 }
 

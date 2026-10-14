@@ -3,6 +3,7 @@
 // handlers nunca leem entrada não validada.
 const FIELD_LABELS = {
   email: 'E-mail',
+  login: 'E-mail ou usuário',
   password: 'Senha',
   name: 'Nome',
   token: 'Link de recuperação',

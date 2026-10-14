@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateUsername } = require('../src/username');
 
 const prisma = new PrismaClient();
 
@@ -29,16 +30,18 @@ async function main() {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  await prisma.user.create({
+  const name = process.env.ADMIN_NAME || 'Administrador';
+  const admin = await prisma.user.create({
     data: {
-      name: process.env.ADMIN_NAME || 'Administrador',
+      name,
       email,
+      username: await generateUsername(prisma, name),
       passwordHash,
       role: 'ADMIN',
     },
   });
 
-  console.log(`Usuário administrador criado: ${email}`);
+  console.log(`Usuário administrador criado: ${email} (usuário: ${admin.username})`);
   console.log('Troque a senha após o primeiro login.');
 }
 

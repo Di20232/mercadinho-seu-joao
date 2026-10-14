@@ -7,6 +7,7 @@ const config = require('../config');
 const validate = require('../validate');
 const httpError = require('../httpError');
 const { hashPassword, verifyPassword, signToken, setAuthCookie, clearAuthCookie, authenticate } = require('../auth');
+const { generateUsername } = require('../username');
 
 const router = express.Router();
 
@@ -53,16 +54,21 @@ const autoLoginLimiter = rateLimit({
   message: { error: 'Muitas tentativas de auto-login. Tente novamente em alguns minutos.' },
 });
 
-const loginSchema = z.object({
-  email: z.string({ required_error: 'informe o e-mail.' })
-    .trim()
-    .min(1, 'informe o e-mail.')
-    .email('formato inválido. Verifique se digitou o e-mail corretamente.')
-    .max(255, 'muito longo.'),
-  password: z.string({ required_error: 'informe a senha.' })
-    .min(1, 'informe a senha.')
-    .max(200, 'muito longa.'),
-});
+// `login` aceita o e-mail ou o nome de usuário (ex: diego1239). O campo antigo
+// `email` continua aceito como apelido de `login`, para clientes e scripts que
+// ainda o enviam.
+const loginSchema = z.preprocess(
+  (body) => (body && typeof body === 'object' && body.login === undefined ? { ...body, login: body.email } : body),
+  z.object({
+    login: z.string({ required_error: 'informe o e-mail ou o usuário.' })
+      .trim()
+      .min(1, 'informe o e-mail ou o usuário.')
+      .max(255, 'muito longo.'),
+    password: z.string({ required_error: 'informe a senha.' })
+      .min(1, 'informe a senha.')
+      .max(200, 'muito longa.'),
+  }),
+);
 
 const registerSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -94,8 +100,11 @@ function generateResetToken() {
 }
 
 router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
-  const { email, password } = req.body;
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  const { password } = req.body;
+  // Nome de usuário nunca tem "@", então ele decide se o login é e-mail ou usuário.
+  const login = req.body.login.toLowerCase();
+  const where = login.includes('@') ? { email: login } : { username: login };
+  const user = await prisma.user.findUnique({ where });
 
   // Mensagens distintas para e-mail e senha, por escolha de usabilidade: o
   // usuário sabe qual dos dois corrigir. Contrapartida: revela se um e-mail
@@ -108,7 +117,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
 
   const token = signToken(user);
   setAuthCookie(res, token);
-  res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+  res.json({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role });
 });
 
 // Auto-login existe só para demonstração local. Ele nunca aceita credenciais do
@@ -155,6 +164,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       data: {
         name,
         email: email.toLowerCase(),
+        username: await generateUsername(prisma, name),
         passwordHash,
         role: 'CASHIER',
         active: true,
@@ -167,7 +177,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
 
   const token = signToken(user);
   setAuthCookie(res, token);
-  res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
+  res.status(201).json({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role });
 });
 
 // Solicitação de reset. A resposta é genérica para não enumerar usuários. No
@@ -276,7 +286,7 @@ router.post('/logout', (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.sub },
-    select: { id: true, name: true, email: true, role: true, active: true },
+    select: { id: true, name: true, email: true, username: true, role: true, active: true },
   });
   if (!user || !user.active) return res.status(401).json({ error: 'Não autenticado.' });
   res.json(user);

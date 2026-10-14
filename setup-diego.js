@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateUsername } = require('./src/username');
 
 const prisma = new PrismaClient();
 
@@ -28,6 +29,7 @@ async function main() {
   const createData = {
     name,
     email,
+    username: existing ? undefined : await generateUsername(prisma, name),
     role,
     active: true,
     passwordHash: data.passwordHash,
@@ -37,7 +39,7 @@ async function main() {
     ? await prisma.user.update({ where: { email }, data })
     : await prisma.user.create({ data: createData });
 
-  console.log(`Usuário pronto: ${user.email} (${user.role})`);
+  console.log(`Usuário pronto: ${user.email} — usuário ${user.username} (${user.role})`);
   console.log('Senha não exibida. Se informada, foi lida de USER_PASSWORD.');
 }
 

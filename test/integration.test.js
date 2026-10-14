@@ -30,7 +30,7 @@ before(async () => {
 
   const passwordHash = await bcrypt.hash('TesteSenha123!', 12);
   await prisma.user.create({
-    data: { name: 'Admin Teste', email: 'admin.test@example.com', passwordHash, role: 'ADMIN' },
+    data: { name: 'Admin Teste', email: 'admin.test@example.com', username: 'admin1000', passwordHash, role: 'ADMIN' },
   });
 
   adminJar = makeCookieJar();
@@ -50,13 +50,16 @@ after(async () => {
   await prisma.$disconnect();
 });
 
+// Atenção: o loginLimiter permite 10 logins por IP a cada 15 min e a suíte
+// inteira roda do mesmo IP — novos testes de login precisam caber nesse total.
 test('login: retorna mensagens específicas para campo, e-mail e senha', async () => {
-  const invalidEmail = await request(baseUrl, null, '/api/auth/login', {
+  // Sem "@" o valor é tratado como nome de usuário — inexistente vira "Login incorreto."
+  const unknownUsername = await request(baseUrl, null, '/api/auth/login', {
     method: 'POST',
-    body: { email: 'email-invalido', password: 'qualquer' },
+    body: { login: 'naoexiste9999', password: 'qualquer' },
   });
-  assert.equal(invalidEmail.status, 400);
-  assert.match(invalidEmail.body.error, /E-mail: formato inválido/);
+  assert.equal(unknownUsername.status, 401);
+  assert.equal(unknownUsername.body.error, 'Login incorreto.');
 
   const missingPassword = await request(baseUrl, null, '/api/auth/login', {
     method: 'POST',
@@ -78,6 +81,24 @@ test('login: retorna mensagens específicas para campo, e-mail e senha', async (
   });
   assert.equal(wrongPassword.status, 401);
   assert.equal(wrongPassword.body.error, 'Senha incorreta.');
+});
+
+test('login: aceita o nome de usuário gerado no cadastro', async () => {
+  const register = await request(baseUrl, makeCookieJar(), '/api/auth/register', {
+    method: 'POST',
+    body: { name: 'Joaquim Ávila', email: 'joaquim.username@example.com', password: 'SenhaUsuario123!' },
+  });
+  assert.equal(register.status, 201);
+  // Primeiro nome, minúsculo e sem acento, seguido de 4 dígitos.
+  assert.match(register.body.username, /^joaquim\d{4}$/);
+
+  // O login pelo e-mail continua coberto pelos demais testes (todos entram por e-mail).
+  const byUsername = await request(baseUrl, makeCookieJar(), '/api/auth/login', {
+    method: 'POST',
+    body: { login: register.body.username.toUpperCase(), password: 'SenhaUsuario123!' },
+  });
+  assert.equal(byUsername.status, 200, 'login pelo usuário deveria funcionar, sem diferenciar maiúsculas');
+  assert.equal(byUsername.body.email, 'joaquim.username@example.com');
 });
 
 test('CSRF: rota que altera estado rejeita requisição sem X-Requested-With', async () => {
@@ -301,7 +322,7 @@ test('auto-login: recusa conta ADMIN mesmo com senha correta', async () => {
 test('auto-login: permite apenas usuário CASHIER configurado no servidor', async () => {
   const passwordHash = await bcrypt.hash('SenhaCaixaAuto123!', 12);
   await prisma.user.create({
-    data: { name: 'Caixa Auto Login', email: 'caixa.auto@example.com', passwordHash, role: 'CASHIER' },
+    data: { name: 'Caixa Auto Login', email: 'caixa.auto@example.com', username: 'caixa1001', passwordHash, role: 'CASHIER' },
   });
 
   const previous = { ...config.autoLogin };
@@ -354,7 +375,7 @@ test('relatórios: filtro até uma data inclui vendas do dia inteiro', async () 
 test('recuperação de senha: token é de uso único', async () => {
   const passwordHash = await bcrypt.hash('SenhaReset123!', 12);
   await prisma.user.create({
-    data: { name: 'Reset Teste', email: 'reset.teste@example.com', passwordHash, role: 'CASHIER' },
+    data: { name: 'Reset Teste', email: 'reset.teste@example.com', username: 'reset1002', passwordHash, role: 'CASHIER' },
   });
 
   const forgot = await request(baseUrl, null, '/api/auth/forgot-password', {
