@@ -360,6 +360,37 @@ test('recuperação de senha: e-mail inexistente recebe resposta genérica sem e
   assert.equal('resetUrl' in res.body, false);
 });
 
+test('recuperação de senha: resposta nunca contém token ou link, para e-mail existente ou inexistente', async () => {
+  // E-mail existente: cria conta temporária para garantir que o usuário existe
+  const passwordHash = await bcrypt.hash('SenhaSegNunca123!', 12);
+  await prisma.user.create({
+    data: { name: 'Seg Teste', email: 'seg.teste@example.com', username: 'seg1010', passwordHash, role: 'CASHIER' },
+  });
+
+  const resExistente = await request(baseUrl, null, '/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'seg.teste@example.com' },
+  });
+  assert.equal(resExistente.status, 200);
+  // A resposta HTTP nunca pode conter token, URL de reset ou qualquer dado sensível
+  const bodyStr = JSON.stringify(resExistente.body);
+  assert.ok(!bodyStr.includes('token'), 'resposta para e-mail EXISTENTE não pode conter "token"');
+  assert.ok(!bodyStr.includes('reset-password'), 'resposta para e-mail EXISTENTE não pode conter link de reset');
+  assert.ok(!bodyStr.includes('resetUrl'), 'resposta para e-mail EXISTENTE não pode conter "resetUrl"');
+
+  // E-mail inexistente: mesma garantia
+  const resInexistente = await request(baseUrl, null, '/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: 'nunca-existiu@example.com' },
+  });
+  assert.equal(resInexistente.status, 200);
+  const bodyStr2 = JSON.stringify(resInexistente.body);
+  assert.ok(!bodyStr2.includes('token'), 'resposta para e-mail INEXISTENTE não pode conter "token"');
+  assert.ok(!bodyStr2.includes('reset-password'), 'resposta para e-mail INEXISTENTE não pode conter link de reset');
+  // Resposta idêntica para existente e inexistente (evita enumeração de usuários)
+  assert.equal(resExistente.body.message, resInexistente.body.message, 'mensagem deve ser idêntica para e-mail existente e inexistente');
+});
+
 test('relatórios: filtro até uma data inclui vendas do dia inteiro', async () => {
   const product = await request(baseUrl, adminJar, '/api/products', {
     method: 'POST',
@@ -384,33 +415,226 @@ test('relatórios: filtro até uma data inclui vendas do dia inteiro', async () 
   assert.ok(topProducts.body.some((p) => p.name === 'Produto Relatório Dia'));
 });
 
+test('relatórios: slow-moving identifica produto parado com capital calculado', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Sem Venda 60d', unit: 'UN', costPrice: 15, salePrice: 30, initialStock: 10 },
+  });
+  assert.equal(product.status, 201);
+
+  const res = await request(baseUrl, adminJar, '/api/reports/slow-moving?days=30');
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.body));
+  const found = res.body.find((p) => p.name === 'Produto Sem Venda 60d');
+  assert.ok(found, 'produto sem nenhuma venda deve aparecer no relatório de itens parados');
+  assert.equal(found.currentStock, 10);
+  assert.equal(found.capitalParado, 150, 'capital parado deve ser currentStock (10) * costPrice (15) = 150');
+});
+
 test('recuperação de senha: token é de uso único', async () => {
+  const crypto = require('crypto');
   const passwordHash = await bcrypt.hash('SenhaReset123!', 12);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: { name: 'Reset Teste', email: 'reset.teste@example.com', username: 'reset1002', passwordHash, role: 'CASHIER' },
   });
 
+  // Solicita o reset via HTTP (sem resetUrl na resposta — o token é obtido pelo Prisma)
   const forgot = await request(baseUrl, null, '/api/auth/forgot-password', {
     method: 'POST',
     body: { email: 'reset.teste@example.com' },
   });
   assert.equal(forgot.status, 200);
-  assert.ok(forgot.body.resetUrl, 'ambiente local/demo deve disponibilizar resetUrl para teste manual do fluxo');
+  // A resposta HTTP nunca pode conter o token ou link — verificação de segurança
+  assert.equal('resetUrl' in forgot.body, false, 'a resposta HTTP nunca pode expor resetUrl');
 
-  const token = new URL(forgot.body.resetUrl).searchParams.get('token');
-  assert.ok(token);
+  // Obtém o token direto do banco (como faria um teste de integração real —
+  // o hash está salvo, mas o rawToken não; precisamos gerar e salvar na rota,
+  // então buscamos o registro e recriamos o token via rawToken gravado como hash).
+  // Como a rota grava apenas o tokenHash (SHA-256 do rawToken), e não o rawToken,
+  // precisamos criar um token de reset diretamente pelo Prisma para o teste.
+  const rawToken = crypto.randomBytes(32).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+  // Invalida tokens anteriores e cria um novo direto pelo banco (simula o que a rota faz)
+  await prisma.passwordResetToken.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
+  await prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } });
 
   const first = await request(baseUrl, null, '/api/auth/reset-password', {
     method: 'POST',
-    body: { token, password: 'NovaSenhaReset123!' },
+    body: { token: rawToken, password: 'NovaSenhaReset123!' },
   });
   assert.equal(first.status, 200);
 
   const second = await request(baseUrl, null, '/api/auth/reset-password', {
     method: 'POST',
-    body: { token, password: 'OutraSenhaReset123!' },
+    body: { token: rawToken, password: 'OutraSenhaReset123!' },
   });
   assert.equal(second.status, 400, 'token de reset reutilizado precisa ser recusado');
+});
+
+// ---------- Estoque ----------
+
+test('estoque: cancelamento de venda devolve o estoque e grava movimentação ADJUSTMENT', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Cancelamento', unit: 'UN', costPrice: 1, salePrice: 5, initialStock: 10 },
+  });
+  assert.equal(product.status, 201);
+
+  const sale = await request(baseUrl, adminJar, '/api/sales', {
+    method: 'POST',
+    body: { items: [{ productId: product.body.id, quantity: 4 }] },
+  });
+  assert.equal(sale.status, 201);
+
+  // Estoque deve ter caído de 10 para 6
+  const afterSale = await request(baseUrl, adminJar, `/api/products/${product.body.id}`);
+  assert.equal(afterSale.body.currentStock, 6);
+
+  const cancel = await request(baseUrl, adminJar, `/api/sales/${sale.body.id}/cancel`, { method: 'POST' });
+  assert.equal(cancel.status, 200);
+  assert.equal(cancel.body.canceled, true);
+
+  // Após cancelamento o estoque deve voltar a 10
+  const afterCancel = await request(baseUrl, adminJar, `/api/products/${product.body.id}`);
+  assert.equal(afterCancel.body.currentStock, 10, 'cancelamento precisa devolver o estoque vendido');
+
+  // Deve haver uma movimentação ADJUSTMENT registrada para o cancelamento
+  const movements = await request(baseUrl, adminJar, `/api/stock/movements?productId=${product.body.id}`);
+  const adjustment = movements.body.find((m) => m.type === 'ADJUSTMENT' && m.reason && m.reason.includes(sale.body.id));
+  assert.ok(adjustment, 'cancelamento precisa gravar movimentação ADJUSTMENT no extrato');
+  assert.equal(adjustment.newStock, 10, 'newStock da movimentação de cancelamento deve ser 10');
+  assert.equal(adjustment.previousStock, 6, 'previousStock deve refletir o saldo após a venda');
+  assert.equal(Number(adjustment.quantity), 4, 'quantidade da movimentação deve ser 4 (o que foi vendido)');
+});
+
+test('estoque: cancelamento duplo retorna 409', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Cancel Duplo', unit: 'UN', costPrice: 1, salePrice: 5, initialStock: 5 },
+  });
+  const sale = await request(baseUrl, adminJar, '/api/sales', {
+    method: 'POST',
+    body: { items: [{ productId: product.body.id, quantity: 1 }] },
+  });
+  assert.equal(sale.status, 201);
+
+  await request(baseUrl, adminJar, `/api/sales/${sale.body.id}/cancel`, { method: 'POST' });
+  const second = await request(baseUrl, adminJar, `/api/sales/${sale.body.id}/cancel`, { method: 'POST' });
+  assert.equal(second.status, 409, 'cancelar a mesma venda duas vezes deve retornar 409');
+});
+
+test('estoque: ajuste/perda grava previousStock e newStock corretos', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Ajuste Estoque', unit: 'UN', costPrice: 1, salePrice: 5, initialStock: 20 },
+  });
+  assert.equal(product.status, 201);
+
+  // Ajuste negativo (perda de 5 unidades)
+  const adj = await request(baseUrl, adminJar, '/api/stock/adjustments', {
+    method: 'POST',
+    body: { productId: product.body.id, quantity: -5, reason: 'Perda por avaria', type: 'LOSS' },
+  });
+  assert.equal(adj.status, 201);
+  assert.equal(adj.body.currentStock, 15, 'após perda de 5 о estoque deve ser 15');
+
+  // Verifica que a movimentação registrou os valores corretos
+  const movements = await request(baseUrl, adminJar, `/api/stock/movements?productId=${product.body.id}&type=LOSS`);
+  const loss = movements.body[0];
+  assert.ok(loss, 'deve existir uma movimentação do tipo LOSS');
+  assert.equal(Number(loss.previousStock), 20, 'previousStock deve ser 20 (antes do ajuste)');
+  assert.equal(Number(loss.newStock), 15, 'newStock deve ser 15 (após o ajuste)');
+  assert.equal(Number(loss.quantity), -5, 'quantity deve ser -5 (negativo para perda)');
+});
+
+test('estoque: histórico filtra por productId e por type', async () => {
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Historico Filtro', unit: 'UN', costPrice: 1, salePrice: 5, initialStock: 10 },
+  });
+  assert.equal(product.status, 201);
+  const pid = product.body.id;
+
+  // Gera uma entrada e uma venda para ter movimentações de tipos diferentes
+  await request(baseUrl, adminJar, '/api/stock/entries', {
+    method: 'POST',
+    body: { productId: pid, quantity: 5, reason: 'Compra extra' },
+  });
+  await request(baseUrl, adminJar, '/api/sales', {
+    method: 'POST',
+    body: { items: [{ productId: pid, quantity: 2 }] },
+  });
+
+  // Filtro por productId — deve retornar apenas movimentações deste produto
+  const byProduct = await request(baseUrl, adminJar, `/api/stock/movements?productId=${pid}`);
+  assert.equal(byProduct.status, 200);
+  assert.ok(Array.isArray(byProduct.body), 'deve retornar array');
+  assert.ok(byProduct.body.length >= 2, 'deve ter ao menos ENTRY (inicial) + ENTRY (compra extra) + SALE');
+  for (const m of byProduct.body) {
+    assert.equal(m.product, 'Produto Historico Filtro', 'todas as movimentações devem ser deste produto');
+  }
+
+  // Filtro por type=ENTRY — deve retornar apenas entradas
+  const byType = await request(baseUrl, adminJar, `/api/stock/movements?productId=${pid}&type=ENTRY`);
+  assert.equal(byType.status, 200);
+  assert.ok(byType.body.length >= 1);
+  for (const m of byType.body) {
+    assert.equal(m.type, 'ENTRY', 'filtro por type=ENTRY deve retornar só movimentações do tipo ENTRY');
+  }
+
+  // Filtro por type=SALE — deve retornar apenas vendas
+  const bySale = await request(baseUrl, adminJar, `/api/stock/movements?productId=${pid}&type=SALE`);
+  assert.equal(bySale.status, 200);
+  assert.ok(bySale.body.length >= 1);
+  for (const m of bySale.body) {
+    assert.equal(m.type, 'SALE', 'filtro por type=SALE deve retornar só movimentações do tipo SALE');
+  }
+});
+
+test('estoque: CASHIER é bloqueado nas rotas administrativas de estoque', async () => {
+  const cashier = await prisma.user.findUnique({ where: { email: 'caixa.auth@example.com' } });
+  const { signToken } = require('../src/auth');
+  const token = signToken(cashier);
+  const cashierJar = {
+    apply() {},
+    header() { return `mj_token=${token}`; },
+  };
+
+  // Produto qualquer para usar nos testes (o id não importa, pois deve ser barrado antes)
+  const anyProductId = '00000000-0000-0000-0000-000000000001';
+
+  const entry = await request(baseUrl, cashierJar, '/api/stock/entries', {
+    method: 'POST',
+    body: { productId: anyProductId, quantity: 1 },
+  });
+  assert.equal(entry.status, 403, 'CASHIER não pode registrar entrada de estoque');
+
+  const adjustment = await request(baseUrl, cashierJar, '/api/stock/adjustments', {
+    method: 'POST',
+    body: { productId: anyProductId, quantity: -1, reason: 'Teste', type: 'LOSS' },
+  });
+  assert.equal(adjustment.status, 403, 'CASHIER não pode registrar ajuste/perda');
+
+  const movements = await request(baseUrl, cashierJar, '/api/stock/movements');
+  assert.equal(movements.status, 403, 'CASHIER não pode ver histórico de movimentações');
+});
+
+test('estoque: produtos abaixo de minStock aparecem na previsão de estoque (alerta)', async () => {
+  // Cria produto com estoque abaixo do mínimo
+  const product = await request(baseUrl, adminJar, '/api/products', {
+    method: 'POST',
+    body: { name: 'Produto Abaixo Min', unit: 'UN', costPrice: 1, salePrice: 5, initialStock: 2, minStock: 10 },
+  });
+  assert.equal(product.status, 201);
+
+  const forecast = await request(baseUrl, adminJar, '/api/reports/forecast');
+  assert.equal(forecast.status, 200);
+  assert.ok(Array.isArray(forecast.body), 'forecast deve retornar array');
+
+  // O produto com estoque (2) abaixo do mínimo (10) deve aparecer na lista
+  const found = forecast.body.some((p) => p.name === 'Produto Abaixo Min');
+  assert.ok(found, 'produto com currentStock < minStock deve aparecer no alerta de estoque mínimo');
 });
 
 // ---------- Importação de planilha ----------

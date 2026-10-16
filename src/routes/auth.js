@@ -8,6 +8,7 @@ const validate = require('../validate');
 const httpError = require('../httpError');
 const { hashPassword, verifyPassword, signToken, setAuthCookie, clearAuthCookie, authenticate } = require('../auth');
 const { generateUsername } = require('../username');
+const { buildTransport } = require('../jobs/dailyAlerts');
 
 const router = express.Router();
 
@@ -180,18 +181,17 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
   res.status(201).json({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role });
 });
 
-// Solicitação de reset. A resposta é genérica para não enumerar usuários. No
-// ambiente local/demo o link volta na resposta para viabilizar teste manual;
-// em produção o token nunca é devolvido por HTTP.
+// Solicitação de reset. A resposta é SEMPRE genérica, independente do ambiente
+// ou de o e-mail existir — isso evita enumeração de usuários e impede que
+// qualquer pessoa com o e-mail de outro usuário obtenha um link de reset pelo
+// HTTP. Fora de produção, o link é escrito no log do servidor para permitir
+// teste manual sem expor o token na resposta HTTP.
 router.post('/forgot-password', forgotLimiter, validate(forgotSchema), async (req, res) => {
   const { email } = req.body;
+  // Mesma mensagem para e-mail existente e inexistente: evita enumeração de usuários.
   const generic = { message: 'Se o e-mail estiver cadastrado, as instruções para redefinir a senha serão disponibilizadas.' };
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
 
-  // Resposta genérica para não revelar se o e-mail existe. Isso evita enumeração
-  // de usuários e também corrige o erro 500 causado pela variável generic antes
-  // inexistente. Em ambiente sem SMTP, o link ainda volta na resposta somente
-  // quando a conta existe, preservando a usabilidade local sem quebrar o fluxo.
   if (!user || !user.active) {
     return res.json(generic);
   }
@@ -214,12 +214,28 @@ router.post('/forgot-password', forgotLimiter, validate(forgotSchema), async (re
 
   const resetUrl = `${config.appBaseUrl}/reset-password.html?token=${encodeURIComponent(rawToken)}`;
 
-  // Sem SMTP dedicado para recuperação, o ambiente local/demo precisa receber o
-  // link para continuar o fluxo. Em produção, nunca devolve token de reset na
-  // resposta HTTP; sem um entregador de e-mail configurado, retorna apenas a
-  // mensagem genérica para não criar um canal de tomada de conta.
+  // Nunca devolve o token ou link via HTTP — qualquer ambiente, qualquer NODE_ENV.
+  // Fora de produção escreve no log para viabilizar teste manual sem SMTP.
   if (config.nodeEnv !== 'production') {
-    return res.json({ ...generic, resetUrl });
+    // eslint-disable-next-line no-console
+    console.log(`[forgot-password] link de reset para ${email}: ${resetUrl}`);
+  }
+
+  // Reutiliza o mesmo transporte SMTP dos alertas de estoque quando configurado.
+  // Falha no envio não muda a resposta genérica nem revela se o e-mail existe.
+  const transport = buildTransport();
+  if (transport) {
+    try {
+      await transport.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject: 'Redefinição de senha - Mercadinho do João',
+        text: `Para redefinir sua senha, acesse: ${resetUrl}\n\nEste link expira em ${config.passwordResetExpiresMin} minutos e só pode ser usado uma vez.`,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[forgot-password] falha ao enviar e-mail de reset:', err.message);
+    }
   }
 
   return res.json(generic);

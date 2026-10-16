@@ -117,4 +117,4 @@ function scheduleDailyAlerts() {
   verifySmtpConnectionOnStartup().catch(() => {}); // erros já são tratados/logados dentro da função
 }
 
-module.exports = { scheduleDailyAlerts, sendDailyAlertEmail, buildAlertText, verifySmtpConnectionOnStartup };
+module.exports = { scheduleDailyAlerts, sendDailyAlertEmail, buildAlertText, verifySmtpConnectionOnStartup, buildTransport };
