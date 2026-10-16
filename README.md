@@ -266,10 +266,10 @@ COOKIE_SECURE=false
 # Rate Limiting
 API_RATE_LIMIT_MAX=300
 
-# Admin padrão
+# Admin padrão (escolha uma senha própria; o seed recusa senha vazia)
 ADMIN_NAME="Dono do Mercado"
 ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=TrocarEssaSenha123!
+ADMIN_PASSWORD=
 
 # Auto-login local/demo (nunca usar ADMIN)
 AUTO_LOGIN_ENABLED=false

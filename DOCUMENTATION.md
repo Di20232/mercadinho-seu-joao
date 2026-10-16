@@ -215,7 +215,7 @@ mercadinho_joao/
 | `npm run prisma:deploy` | Aplica migrations em produção |
 | `npm run seed` | Cria o primeiro usuário administrador |
 | `npm run seed:products` | Carrega produtos de exemplo |
-| `npm run reset-password` | Redefine a senha de um usuário (recuperação de emergência) |
+| `npm run reset-password -- email@exemplo.com` | Redefine a senha de um usuário (recuperação de emergência): pede a nova senha sem exibi-la e encerra as sessões abertas da conta |
 | `npm test` | Roda a suíte de testes de integração |
 
 ## 9. Segurança (resumo)

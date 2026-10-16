@@ -28,6 +28,11 @@ async function main() {
   if (!password || password.length < 8) {
     throw new Error('Defina ADMIN_PASSWORD (mínimo 8 caracteres) no .env antes de rodar o seed.');
   }
+  // Essa era a senha de exemplo do .env.example e do README, então é pública:
+  // nenhum administrador pode nascer com uma senha que qualquer um conhece.
+  if (password === 'TrocarEssaSenha123!') {
+    throw new Error('ADMIN_PASSWORD ainda é a senha de exemplo. Defina uma senha própria no .env antes de rodar o seed.');
+  }
 
   const passwordHash = await bcrypt.hash(password, 12);
   const name = process.env.ADMIN_NAME || 'Administrador';

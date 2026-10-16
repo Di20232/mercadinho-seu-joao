@@ -61,10 +61,11 @@ services:
       EXPIRY_ALERT_DAYS: ${EXPIRY_ALERT_DAYS:-7}
       FORECAST_WINDOW_DAYS: ${FORECAST_WINDOW_DAYS:-30}
       # Só usados pelo "docker compose exec app npm run seed" (não pelo
-      # servidor em si) — defina no seu .env se quiser outro e-mail/senha.
+      # servidor em si). ADMIN_PASSWORD não tem valor padrão de propósito:
+      # defina no seu .env, senão o seed se recusa a criar o administrador.
       ADMIN_NAME: ${ADMIN_NAME:-Dono do Mercado}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-TrocarEssaSenha123!}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "3100:3000"
 
